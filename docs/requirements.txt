@@ -1,0 +1,4 @@
+# what Read the Docs installs to build the site (the pages carry their outputs; no analysis code runs)
+sphinx==9.0.4
+myst-nb==1.4.0
+furo==2025.12.19

@@ -1,0 +1,183 @@
+@@page spatially_explicit
+
+@@md
+# Spatially explicit models: geography in the model
+
+<div class="roadmap"><div class="rm-sofar"><span>So far</span>Self-training and the embedding both used the neighbours of a hexagon.</div><div class="rm-question"><b>How to bring geography into AI?</b><span>The spatial lag writes the neighbours into the table. A model is spatially explicit if its results change when the data are moved.</span></div><div class="rm-steps"><div class="rm-step"><b>The spatial lag</b><span>the neighbours' average as a column</span></div><div class="rm-step"><b>Spatially explicit</b><span>the model is given the locations</span></div><div class="rm-step"><b>The invariance test</b><span>move the hexagons, and compare</span></div><div class="rm-step"><b>The unit</b><span>smaller hexagons, another answer</span></div></div></div>
+
+## The map, written into the table: the spatial lag
+
+Everything so far would work the same if the rows were shuffled: a table has no geography in it. Part 1 of the lecture put it this way: traditional AI does not consider spatial concepts by default. The simplest way to bring the map in is one more column. The spatial lag of week 3 is, for every hexagon, the average of its neighbours' values.
+
+@@code
+lag_rows = pd.DataFrame({"place": list(FIVE_PLACES)}, index=range(1, 6))
+for f in SHOW:
+    lag_rows[f] = hexes[f].to_numpy()[FIVE]
+    lag_rows[f + ", neighbours' average"] = (W @ hexes[f].to_numpy(float))[FIVE].round(1)
+lag_rows["landuse"] = y[FIVE]
+lag_rows
+
+@@md
+How much do the neighbours say? The boundary rule of the page on supervised learning, with all 16 counts, is given three different descriptions of a hexagon.
+
+@@code
+feature_sets_0 = {"own profile": X, "own profile + neighbours' profile": np.hstack([X, X_around]), "neighbours' profile only": X_around}
+lag_scores = {}
+for name, feats in feature_sets_0.items():
+    lag_scores[name] = float(np.mean([LogisticRegression(max_iter=3000).fit(feats[tr], y[tr]).score(feats[te], y[te]) for tr, va, te in map(three_piles, range(20))]))
+    print(f"{name:36s} {lag_scores[name]:.1%} on the test pile (mean of 20 deals)")
+print(f"always answering 'green'             {(y == 'green').mean():.1%}")
+h.note("lag", {k: round(v, 3) for k, v in lag_scores.items()}, SAVE)
+h.note("dependence", {"same_as_neighbours": round(float(same_as_neighbours), 2), "by_chance": round(float(by_chance), 2)}, SAVE)
+
+@@md
+> **What did we just see?** The neighbours alone, without a single fact about the hexagon itself, already say much about its land use: that is spatial dependence at work. Added to the hexagon's own profile they add about one point here, because at this hexagon size a hexagon mostly says about itself what its neighbours would say. The rest of this page tests when the map is worth more, and the next page asks whether a random deal of the piles is a fair test at all.
+
+@@md
+## Spatially explicit models and the invariance test
+
+Semi-supervised and self-supervised learning both used the neighbourhood: for self-training each hexagon was described together with its neighbours, and the pretext task was to predict them. What does it mean for a model to use location, and how can we tell whether it does?
+
+An ordinary classifier sees a table. It has no idea that row 17 lies next to row 18. A model becomes **spatially explicit** when location enters it somehow. We try the two simplest ways of location encoding:
+
+- **the neighbours' profile** · add `W @ X` to the features;
+- **coordinates** · add the x and y of the hexagon centre.
+
+Then we apply Goodchild's **invariance test**: *pick the hexagons up, scatter them over the map at random, and see whether the results change.* If they do, the model is spatially explicit.
+
+## The experiment
+
+The model of this page is a random forest: 200 decision trees, each grown on a random part of the training rows, which vote on the land use of a hexagon.
+
+@@code
+def new_forest(trees=200):
+    return RandomForestClassifier(n_estimators=trees, min_samples_leaf=2, random_state=SEED)
+
+
+versions = {
+    "POIs only": X,
+    "POIs + neighbours' profile": np.hstack([X, X_around]),
+    "POIs + coordinates": np.hstack([X, xy]),
+}
+train, test = train_test_split(np.arange(len(y)), test_size=0.3, stratify=y, random_state=SEED)
+models = {name: new_forest().fit(F[train], y[train]) for name, F in versions.items()}
+before = {name: models[name].predict(F[test]) for name, F in versions.items()}
+for name in versions:
+    print(f"{name:28s} accuracy {(before[name] == y[test]).mean():.1%} on the test hexagons")
+
+@@md
+Now the relocation. Every hexagon keeps its own POIs and its own land-use label, and is moved to a random position. Its neighbours and its coordinates are therefore new. We then ask two separate questions.
+
+1. **Does the model use location?** Give the *same trained model* the relocated hexagons and count how many predictions change.
+2. **What is the spatial arrangement worth?** *Train a new model* on the relocated map. If it does as well as the model trained on the real map, the arrangement added nothing.
+
+@@code
+rng = np.random.default_rng(SEED)
+new_position = rng.permutation(len(y))        # hexagon i moves to where hexagon new_position[i] used to be
+occupant = np.argsort(new_position)           # occupant[p] = the hexagon that now sits at position p
+
+moved = {
+    "POIs only": X,                                                               # nothing in here knows about location
+    "POIs + neighbours' profile": np.hstack([X, (W @ X[occupant])[new_position]]),  # profile of the NEW neighbours
+    "POIs + coordinates": np.hstack([X, xy[new_position]]),                       # the NEW coordinates
+}
+after = {name: models[name].predict(F[test]) for name, F in moved.items()}                               # question 1
+retrained = {name: new_forest().fit(F[train], y[train]).predict(F[test]) for name, F in moved.items()}   # question 2
+
+fig, axes = plt.subplots(1, 2, figsize=(15, 5.6))
+h.map_classes(hexes, y, ax=axes[0], title="The real map")
+h.map_classes(hexes, y[occupant], ax=axes[1], places=False, title="After relocation: same hexagons, random positions")
+plt.tight_layout()
+h.save(fig, "3_relocation_maps.png", SAVE)
+plt.show()
+
+@@code
+names = list(versions)
+acc = lambda pred: (pred == y[test]).mean()
+acc_real = [acc(before[n]) for n in names]
+acc_same = [acc(after[n]) for n in names]
+acc_new = [acc(retrained[n]) for n in names]
+changed = [(before[n] != after[n]).mean() for n in names]
+
+fig, ax = plt.subplots(figsize=(10, 4.6))
+pos = np.arange(len(names))[::-1] * 1.25
+ax.barh(pos + 0.3, acc_real, height=0.27, color="#2a78d6", label="trained and tested on the real map")
+ax.barh(pos, acc_same, height=0.27, color="#eb6834", label="same model, relocated map")
+ax.barh(pos - 0.3, acc_new, height=0.27, color="#1baf7a", label="retrained on the relocated map")
+for p, a, b, c, ch in zip(pos, acc_real, acc_same, acc_new, changed):
+    ax.text(a + 0.01, p + 0.3, f"{a:.0%}", va="center", fontsize=10)
+    ax.text(b + 0.01, p, f"{b:.0%}   ({ch:.0%} of predictions changed)", va="center", fontsize=10)
+    ax.text(c + 0.01, p - 0.3, f"{c:.0%}", va="center", fontsize=10)
+ax.set_yticks(pos, names)
+ax.set_xlim(0, 1.32)
+ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0], ["0%", "25%", "50%", "75%", "100%"])
+ax.set_xlabel("accuracy on the test hexagons")
+ax.set_title("The invariance test")
+ax.tick_params(length=0)
+ax.spines["left"].set_visible(False)
+ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3, fontsize=10)
+plt.tight_layout()
+h.save(fig, "3_invariance_test.png", SAVE)
+plt.show()
+
+@@md
+> **What did we just see?** Compare blue and orange for question 1. The model that only sees POIs gives exactly the same answers after relocation. That is true by construction: location was never among its inputs, so it cannot notice. The other two change some of their answers, so by Goodchild's test they are spatially explicit, although all three were trained on "spatial data".
+>
+> Compare blue and green for question 2. If a model retrained on the scrambled map is as accurate as the model trained on the real map, the real arrangement of the hexagons was worth nothing to it. The orange bar must not be read that way: it shows a model that meets inputs unlike those it was trained on, and such a model loses accuracy whether or not location was useful.
+>
+> Being spatially explicit and being *better* are therefore two different things. Whether the neighbours add information depends on the task and on the size of the units, which the section *Going deeper* looks at.
+
+@@md
+## Going deeper
+
+**Smaller units.** The same region is also available at H3 resolution 9, where a hexagon is seven times smaller (about 0.08 km²) and holds far fewer POIs. We ask question 2 at both sizes: what is the spatial arrangement worth to the model that sees the neighbours' profile? This cell is *slow* (about half a minute).
+
+@@code
+def worth_of_the_arrangement(res, relocations=3):
+    g = h.load_hexagons(res)
+    Xg, yg, Wg = np.log1p(g[FEATURES].to_numpy(float)), g["landuse"].to_numpy(), h.neighbour_matrix(g)
+    tr, te = train_test_split(np.arange(len(yg)), test_size=0.3, stratify=yg, random_state=SEED)
+    fit_score = lambda F: (new_forest(150).fit(F[tr], yg[tr]).predict(F[te]) == yg[te]).mean()
+    real = fit_score(np.hstack([Xg, Wg @ Xg]))
+    scrambled = []
+    for s in range(relocations):
+        pos = np.random.default_rng(s).permutation(len(yg))
+        scrambled.append(fit_score(np.hstack([Xg, (Wg @ Xg[np.argsort(pos)])[pos]])))
+    return {"hexagons": len(g), "median POIs per hexagon": g["poi_total"].median(), "POIs only": fit_score(Xg),
+            "with neighbours, real map": real, "with neighbours, relocated map": np.mean(scrambled),
+            "worth of the arrangement (points)": (real - np.mean(scrambled)) * 100}
+
+
+try:
+    by_size = pd.DataFrame({f"resolution {r}": worth_of_the_arrangement(r) for r in (8, 9)}).T
+    worth = by_size["worth of the arrangement (points)"]
+    fig, ax = plt.subplots(figsize=(8, 2.4))
+    h.bars(ax, [f"{name} ({int(n):,} hexagons)" for name, n in by_size["hexagons"].items()], worth.tolist(),
+           title="What the spatial arrangement is worth, by hexagon size", xlabel="percentage points of accuracy",
+           xlim=(min(0, worth.min()) - 0.5, max(1, worth.max()) * 1.3), fmt="{:+.1f}")
+    plt.tight_layout()
+    h.save(fig, "3_hexagon_size.png", SAVE)
+    plt.show()
+    display(by_size.round(3))
+except FileNotFoundError as err:
+    print(err)
+
+@@md
+> **What did we just see?** At resolution 8 a hexagon holds enough POIs to describe itself, and the arrangement of its neighbours is worth nothing to the model. At resolution 9 half of the hexagons hold one POI or none, and there the neighbours are worth several points. How much spatial dependence is worth depends on how much a unit says about itself.
+>
+> This is a scale effect of the kind you met in week 1 as the modifiable areal unit problem. Be careful with the comparison, though: with the hexagon size we changed the features, the labels and the class proportions together, since every label was derived again for the smaller hexagons.
+
+@@md
+## Your turn
+
+- Add a second ring: `W @ X_around` is the average over the neighbours' neighbours. Does a wider view help?
+- Set `RES = 9` in the setup cell and run the whole notebook again (it takes much longer). Which pages change their story, and which do not?
+- The neighbours' *labels* would be a very strong feature. Why would it be cheating to use `W @ (y == "green")` as a feature here, and when would it be legitimate?
+- Apply Goodchild's other three tests (representation, formulation, outcome) to the three models above. Which pass?
+- Go back to methods from earlier weeks: Moran's I, kriging, k-means on attributes, shortest paths. Which of them would notice a relocation?
+
+**Ask an AI assistant**
+
+> Explain in plain language what a spatial lag feature is and how to compute it for a GeoDataFrame of polygons with libpysal, for a column called `food`. Then explain one situation in which adding it to a machine learning model would leak information from the test set.
+
+Then check its answer against week 3: is the weights matrix row-standardised, and does the leakage example make sense for our hexagons?

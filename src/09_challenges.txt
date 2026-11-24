@@ -1,0 +1,278 @@
+@@page challenges
+
+@@md
+# Challenges: can we believe the score?
+
+<div class="roadmap"><div class="rm-sofar"><span>So far</span>Models that use location were scored on hexagons held out at random.</div><div class="rm-question"><b>Can we believe the score, and whom does the model serve?</b><span>A spatial split holds out whole areas. A model trained in two cities is tested in the third. The data carry the habits of those who mapped them.</span></div><div class="rm-steps"><div class="rm-step"><b>A random split</b><span>test hexagons beside training hexagons</span></div><div class="rm-step"><b>A spatial split</b><span>whole areas held out</span></div><div class="rm-step"><b>Three cities</b><span>train in two, test in the third</span></div><div class="rm-step"><b>Who mapped what</b><span>bias in our own data</span></div><div class="rm-step"><b>A research case</b><span>better data beat a cleverer model</span></div></div></div>
+
+So far we judged models on hexagons picked **at random**. But a randomly picked test hexagon almost always has training hexagons right next to it, and we saw on the data page that neighbours are alike. The dependence that the earlier pages borrowed from also links every test hexagon to the training hexagons around it, so the test itself has to be examined.
+
+The alternative is a **spatial split**: we cut the region into blocks and hold out entire blocks, so the model is tested on areas it was not trained on. In the literature this is called spatial, or blocked, cross-validation.
+
+## The experiment
+
+@@code
+N_BLOCKS = 10
+blocks = KMeans(n_clusters=N_BLOCKS, n_init=10, random_state=SEED).fit_predict(xy)     # compact spatial blocks
+
+random_folds = StratifiedKFold(5, shuffle=True, random_state=SEED)
+spatial_folds = GroupKFold(5)
+
+random_test = np.zeros(len(y), dtype=int)
+for k, (_, te) in enumerate(random_folds.split(X, y)):
+    random_test[te] = k
+spatial_test = np.zeros(len(y), dtype=int)
+for k, (_, te) in enumerate(spatial_folds.split(X, y, groups=blocks)):
+    spatial_test[te] = k
+
+fig, axes = plt.subplots(1, 2, figsize=(15, 5.6))
+h.map_groups(hexes, random_test, ax=axes[0], highlight=0, title="Random split: one of five test folds")
+h.map_groups(hexes, spatial_test, ax=axes[1], highlight=0, title="Spatial split: one of five test folds")
+plt.tight_layout()
+h.save(fig, "4_folds_maps.png", SAVE)
+plt.show()
+
+@@md
+<img src="_static/figures/4_folds_cycle.gif" alt="Random and spatial folds, one after the other" class="wide">
+
+*The five test folds of each split, one after the other: scattered hexagons on the left, whole areas on the right.*
+
+@@code
+def cv_predict(F, folds, groups=None, trees=200):
+    return cross_val_predict(new_forest(trees), F, y, cv=folds, groups=groups)
+
+
+feature_sets = {
+    "POIs only": X,
+    "POIs + neighbours' profile": np.hstack([X, X_around]),
+    "POIs + coordinates": np.hstack([X, xy]),
+    "coordinates only": xy,
+}
+pred_random = {name: cv_predict(F, random_folds) for name, F in feature_sets.items()}
+pred_spatial = {name: cv_predict(F, spatial_folds, blocks) for name, F in feature_sets.items()}
+cv = pd.DataFrame({"random split": {n: (p == y).mean() for n, p in pred_random.items()},
+                   "spatial split": {n: (p == y).mean() for n, p in pred_spatial.items()}})
+cv["overstated by (points)"] = (cv["random split"] - cv["spatial split"]) * 100
+baseline = (y == "green").mean()
+
+fig, ax = plt.subplots(figsize=(9, 4.4))
+pos = np.arange(len(cv))[::-1]
+ax.barh(pos + 0.2, cv["random split"], height=0.36, color="#2a78d6", label="random split")
+ax.barh(pos - 0.2, cv["spatial split"], height=0.36, color="#eb6834", label="spatial split")
+for p, (r, s) in zip(pos, zip(cv["random split"], cv["spatial split"])):
+    ax.text(r + 0.01, p + 0.2, f"{r:.0%}", va="center", fontsize=10)
+    ax.text(s + 0.01, p - 0.2, f"{s:.0%}", va="center", fontsize=10)
+ax.axvline(baseline, color=h.MUTED, linestyle="--", linewidth=1)
+ax.text(baseline, len(cv) - 0.42, f" always guess 'green': {baseline:.0%}", color=h.MUTED, fontsize=9, va="bottom")
+ax.set_yticks(pos, cv.index)
+ax.set_ylim(-0.6, len(cv) - 0.1)
+ax.set_xlim(0, 1.0)
+ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0], ["0%", "25%", "50%", "75%", "100%"])
+ax.set_xlabel("accuracy on the held-out hexagons")
+ax.set_title("Same models, same data, two ways of testing")
+ax.tick_params(length=0)
+ax.spines["left"].set_visible(False)
+ax.legend(loc="lower right")
+plt.tight_layout()
+h.save(fig, "4_random_vs_spatial_cv.png", SAVE)
+plt.show()
+cv.round(3)
+
+@@md
+> **What did we just see?** Read the last column from top to bottom. The model that sees only POIs is overstated a little by the random split, the models that also see the neighbours or the coordinates somewhat more, and the model that knows *nothing but the coordinates* by far the most. That last model is a deliberate extreme: it has simply memorised the map ("around here it is mostly forest"), and asked about an area it was not trained on, it falls back towards guessing.
+>
+> The more a model can use location, the more a random split overstates it. The two splits answer different questions. A random split asks how well the model fills gaps in an area that was already sampled. A spatial split asks how well it works somewhere new.
+
+**What accuracy hides.** One number for three classes of very different size can hide a great deal.
+
+@@code
+p = pred_spatial["POIs only"]
+recall = {c: (p[y == c] == c).mean() for c in CLASSES}
+print("POIs only, spatial split")
+print(f"  accuracy {(p == y).mean():.0%}   balanced accuracy {balanced_accuracy_score(y, p):.0%}")
+for c in CLASSES:
+    print(f"  of the {int((y == c).sum()):4d} {c:11s} hexagons the model finds {recall[c]:.0%}")
+
+@@md
+> **What did we just see?** The model is good at the two large classes and poor at the small one. Accuracy rewards getting the large classes right. *Balanced accuracy* is the average of the three shares above, and it treats the classes equally. Which of the two you report should depend on which class matters for the decision the map supports.
+
+@@md
+## Going deeper
+
+**One block layout is also an anecdote.** We repeat both splits with five different random seeds and five different block layouts, for three of the feature sets. This cell is *slow* (about a minute).
+
+@@code
+rows = []
+for name in ["POIs only", "POIs + neighbours' profile", "coordinates only"]:
+    for s in range(5):
+        r = (cv_predict(feature_sets[name], StratifiedKFold(5, shuffle=True, random_state=s), trees=100) == y).mean()
+        b = KMeans(n_clusters=N_BLOCKS, n_init=3, random_state=s).fit_predict(xy)
+        sp = (cv_predict(feature_sets[name], GroupKFold(5), b, trees=100) == y).mean()
+        rows += [{"features": name, "split": "random split", "accuracy": r}, {"features": name, "split": "spatial split", "accuracy": sp}]
+spread = pd.DataFrame(rows)
+summary = spread.groupby(["features", "split"], sort=False)["accuracy"].agg(["mean", "std"]).unstack()
+gap = (summary[("mean", "random split")] - summary[("mean", "spatial split")]) * 100
+
+fig, ax = plt.subplots(figsize=(9, 3.4))
+order = ["POIs only", "POIs + neighbours' profile", "coordinates only"]
+for i, name in enumerate(order[::-1]):
+    for split, color, dy in (("random split", "#2a78d6", 0.14), ("spatial split", "#eb6834", -0.14)):
+        v = spread[(spread["features"] == name) & (spread["split"] == split)]["accuracy"]
+        ax.scatter(v, np.full(len(v), i + dy), s=46, color=color, edgecolor="white", linewidth=1, zorder=3, label=split if i == 0 else None)
+    points = round(gap[name])
+    ax.text(1.0, i, f"overstated by {points} point{'s' if points != 1 else ''}", va="center", ha="right", fontsize=10)
+ax.set_yticks(range(3), order[::-1])
+ax.set_xlim(0.5, 1.0)
+ax.set_ylim(-0.5, 2.5)
+ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+ax.set_xlabel("cross-validated accuracy (each dot is one seed or one block layout)")
+ax.set_title("The more a model can use location, the more a random split overstates it")
+ax.xaxis.grid(True, color=h.GRID)
+ax.tick_params(length=0)
+ax.spines["left"].set_visible(False)
+ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=2, fontsize=10)
+plt.tight_layout()
+h.save(fig, "4_gap_spread.png", SAVE)
+plt.show()
+(summary * 100).round(1)
+
+@@md
+**How big should the blocks be?** With many tiny blocks, every test hexagon again has training neighbours and we are back at the random split. With a few huge blocks the test is hard, and we have few of them. Note also that our blocks touch: a test hexagon on the edge of a block still has training neighbours on the other side.
+
+@@code
+sweep = []
+for n_blocks in [5, 10, 20, 50, 150]:
+    b = KMeans(n_clusters=n_blocks, n_init=5, random_state=SEED).fit_predict(xy)
+    for name in ["POIs only", "coordinates only"]:
+        sweep.append({"blocks": n_blocks, "features": name,
+                      "accuracy": (cv_predict(feature_sets[name], GroupKFold(5), b, trees=100) == y).mean()})
+sweep = pd.DataFrame(sweep)
+
+fig, ax = plt.subplots(figsize=(8, 4))
+for name, color in [("POIs only", "#2a78d6"), ("coordinates only", "#eb6834")]:
+    part = sweep[sweep["features"] == name]
+    ax.plot(part["blocks"], part["accuracy"], marker="o", markersize=7, linewidth=2, color=color)
+    ax.annotate(name, (part["blocks"].iloc[-1], part["accuracy"].iloc[-1]), xytext=(8, 0),
+                textcoords="offset points", va="center", fontsize=10)
+    ax.axhline(cv.loc[name, "random split"], color=color, linestyle=":", linewidth=1.2)
+ax.set_xscale("log")
+ax.set_xticks(sweep["blocks"].unique(), sweep["blocks"].unique())
+ax.set_xlim(4, 500)
+ax.set_xlabel("number of spatial blocks (few large blocks  →  many small blocks)")
+ax.set_ylabel("accuracy")
+ax.set_title("Smaller blocks, friendlier test (dotted: random split)")
+ax.yaxis.grid(True, color=h.GRID)
+plt.tight_layout()
+h.save(fig, "4_block_size.png", SAVE)
+plt.show()
+
+@@md
+**Re-reading the invariance experiment with a spatial split.** On the page before we judged the neighbours' profile on hexagons held out at random, which we now know favours a model that uses location. What do the neighbours add at resolution 9 when the test is a spatial split? This cell is *slow* (about a minute and a half).
+
+@@code
+try:
+    g9 = h.load_hexagons(9)
+    X9, y9, W9, xy9 = np.log1p(g9[FEATURES].to_numpy(float)), g9["landuse"].to_numpy(), h.neighbour_matrix(g9), g9[["x", "y"]].to_numpy()
+    F9 = np.hstack([X9, W9 @ X9])
+    b9 = KMeans(n_clusters=N_BLOCKS, n_init=3, random_state=SEED).fit_predict(xy9)
+    score9 = lambda F, folds, groups=None: (cross_val_predict(new_forest(100), F, y9, cv=folds, groups=groups) == y9).mean()
+    gain_random = score9(F9, random_folds) - score9(X9, random_folds)
+    gain_spatial = score9(F9, spatial_folds, b9) - score9(X9, spatial_folds, b9)
+    print(f"What the neighbours' profile adds at resolution 9: {gain_random * 100:+.1f} points with a random split, {gain_spatial * 100:+.1f} with a spatial split.")
+except FileNotFoundError as err:
+    print(err)
+
+@@md
+> **What did we just see?** Part of the gain that we credited to the neighbours was the random split speaking. The gain does not vanish, so the neighbours do carry information about small hexagons, but an honest figure needs the test that matches the use.
+
+**A new city.** The widest test this dataset allows: train on two municipalities and predict the third. For comparison we also train a model inside each city alone. (Kauniainen has two hexagons and is counted with Espoo.)
+
+@@code
+city = hexes["municipality"].replace({"Kauniainen": "Espoo"}).to_numpy()
+rows = []
+for target in ["Helsinki", "Espoo", "Vantaa"]:
+    te = city == target
+    elsewhere = new_forest().fit(X[~te], y[~te]).predict(X[te])
+    at_home = cross_val_predict(new_forest(), X[te], y[te], cv=StratifiedKFold(5, shuffle=True, random_state=SEED))
+    rows.append({"tested on": target, "hexagons": int(te.sum()),
+                 "largest class there": f"{pd.Series(y[te]).value_counts(normalize=True).iloc[0]:.0%}",
+                 "trained in the other two": (elsewhere == y[te]).mean(),
+                 "trained in this city only": (at_home == y[te]).mean(),
+                 "balanced accuracy, trained elsewhere": balanced_accuracy_score(y[te], elsewhere)})
+cities = pd.DataFrame(rows)
+cities.round(3)
+
+@@md
+> **What did we just see?** The three cities get three different accuracies, and it is tempting to read that as a model that travels badly. Compare the two accuracy columns before you do. A model trained only inside a city scores about the same as a model that never saw it, so the differences between the cities come from their land-use mix (Espoo is mostly green, which is easy) and not from the journey. Balanced accuracy, which ignores the mix, is nearly the same in all three.
+>
+> The model transfers between these cities because they resemble each other: neighbouring Finnish municipalities, mapped by the same community. A test inside one region therefore says nothing yet about a place that does not resemble it. Regions differ, in what is built and in how it is mapped. Week 3 called this *spatial heterogeneity*, and it is where the geographic bias of the lecture begins.
+
+**Is the map equally detailed everywhere?** Our features are whatever volunteers have mapped. Compare what a typical residential hexagon contains in the three cities.
+
+@@code
+detail = (hexes.assign(city=city)[hexes["landuse"] == "residential"]
+          .groupby("city")[["poi_total", "street_furniture", "bike", "car", "shop_daily"]].median().astype(int))
+share = hexes[["street_furniture", "car", "bike"]].sum().sum() / hexes[FEATURES].sum().sum()
+print(f"Street furniture, car facilities and bicycle facilities make up {share:.0%} of all points of interest.")
+print("Median number of POIs in a residential hexagon:")
+detail
+
+@@md
+> **What did we just see?** A residential hexagon in Helsinki holds several times more street furniture and bicycle facilities than one in Espoo or Vantaa. Helsinki is denser, and it may also simply be mapped in more detail; these data cannot tell the two apart. A model trained on such features learns partly where mappers have been busy. That is representational bias inside our own small dataset, before any model crosses a border.
+
+@@md
+## A case from research: better data beat a cleverer model
+
+The same lesson appeared in the author's research on transport emissions. The task was to predict the daily CO₂ of the car trips that start in a hexagon (172 hexagons of about 5 km² in the Helsinki region), from the residents and jobs of the hexagon, with and without an embedding of its travel times. R² on held-out hexagons:
+
+| Features | Random split | Spatial split |
+|---|---|---|
+| residents and jobs | 0.67 | 0.63 |
+| residents and jobs + travel-time embedding | 0.71 | 0.64 |
+
+Under a random split the embedding seems to add 4 points. Under a spatial split it adds 1, which is within the noise of the test. The gain appears only when the test hexagons lie next to training hexagons.
+
+The case holds a second lesson. Residents and jobs are published by postal area, not by hexagon. In a first version they were spread over the hexagons of each postal area by ground area, which puts people into forests and lakes. With those figures, residents and jobs explained only 0.38, and the embedding seemed to add 15 points under the random split. Placing residents by the floor area of residential buildings and jobs by the floor area of other buildings raised that score to 0.63, and most of the apparent gain of the embedding disappeared: it had been repairing badly placed residents and jobs. A better measurement of the obvious variable was worth more than a cleverer model.
+
+*Source: emission accounting with the GEMMAT model (Dey, Marín-Flores and Tenkanen, 2026); residents and jobs from the postal-code statistics of Statistics Finland (Paavo 2024) and the building grid of HSY (2024).*
+
+@@md
+## Your turn
+
+- Map the errors: `h.map_values(hexes, (pred_spatial["POIs only"] != y).astype(int), cmap="Reds")`. Are the mistakes scattered or clustered? What would Moran's I say?
+- Is 69% of neighbours sharing a label more than chance? Run a join-count test from week 3 on the labels.
+- Our blocks touch. Remove from each training fold the hexagons within one or two rings of a test hexagon (a *buffer*) and see whether the spatial-split accuracy drops further.
+- Use square blocks instead of k-means blocks: `blocks = (xy[:, 0] // 5000).astype(int) * 1000 + (xy[:, 1] // 5000).astype(int)`.
+- Go back to the page on semi-supervised learning. Self-training was judged on hexagons scattered among the labelled ones. For which use of the map is that a fair test, and for which is it not?
+- For a project of your own: which split matches the way the model will actually be used?
+
+**Ask an AI assistant**
+
+> I am training a scikit-learn classifier on spatial data with strong spatial autocorrelation. Explain why a random train/test split can overestimate accuracy, and show how to do spatially blocked cross-validation with `GroupKFold`. Then list two situations in which a random split is still the right choice.
+
+Then check its answer: does it create the blocks from the coordinates, and does it keep whole blocks together?
+
+@@code hidden
+# Only for the teacher: export the animation frames used on the fallback slides (set GEOAI_SAVE_FIGS=1).
+if SAVE:
+    frames = []
+    for r, y_r in enumerate(history):
+        fig, ax = plt.subplots(figsize=(9.6, 6.4))
+        adopted = pd.notna(y_r) & hidden
+        right = f"{(y_r[adopted] == y[adopted]).mean():.0%} of adopted labels right" if adopted.any() else "only the 30 labels we were given"
+        h.map_classes(hexes, y_r, ax=ax, outline=labelled,
+                      title=f"Self-training, round {r}: {pd.notna(y_r).sum()} of {len(y)} hexagons labelled · {right}")
+        frames.append(h.save(fig, f"steps/1_selftraining_round_{r:02d}.png"))
+        plt.close(fig)
+    h.make_gif(frames, "1_selftraining_spread.gif", seconds=1.0)
+
+    frames = []
+    for k in range(5):
+        fig, axes = plt.subplots(1, 2, figsize=(15, 5.6))
+        h.map_groups(hexes, random_test, ax=axes[0], highlight=k, title=f"Random split: test fold {k + 1} of 5")
+        h.map_groups(hexes, spatial_test, ax=axes[1], highlight=k, title=f"Spatial split: test fold {k + 1} of 5")
+        plt.tight_layout()
+        frames.append(h.save(fig, f"steps/4_folds_{k + 1}.png"))
+        plt.close(fig)
+    h.make_gif(frames, "4_folds_cycle.gif", seconds=1.5, hold_last=1.5)
+    print("figures written to the folder", h.FIGURES.name)

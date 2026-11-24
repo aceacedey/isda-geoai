@@ -1,0 +1,13 @@
+.venv/
+docs/_build/
+docs/jupyter_execute/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+~$*
+Thumbs.db
+.DS_Store
+# pictures written while the notebook runs; build_site.py copies what the site needs into docs/_static/
+/figures/
+.claude/
+build.log
