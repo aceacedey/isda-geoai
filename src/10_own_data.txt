@@ -3,6 +3,11 @@
 @@md
 # Your own data
 
+@@md site
+<div class="slides n1"><a href="_static/slides/dataset.png"><img src="_static/slides/dataset.png" alt="Lecture slide: Geographic data: a table and a map"></a></div>
+<p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
+
+@@md
 ```{admonition} Question
 :class: tip
 How do the notebooks run on another city, or on another table?

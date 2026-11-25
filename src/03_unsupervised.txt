@@ -3,18 +3,17 @@
 @@md
 # Unsupervised learning: groups without names
 
+@@md site
+<div class="slides n1"><a href="_static/slides/ways_part1.png"><img src="_static/slides/ways_part1.png" alt="Lecture slide: From training data to test data: the two paradigms of part 1"></a></div>
+<p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
+
+@@md
 ```{admonition} Question
 :class: tip
 What groups does a model find when it is given no labels?
 ```
 
 **In this notebook:** 1 · k-means on two counts  2 · three groups on the map  3 · how many groups  4 · who names a group
-
-@@md site
-<div class="slides n1"><a href="_static/slides/ways_part1.png"><img src="_static/slides/ways_part1.png" alt="Lecture slide: From training data to test data: the two paradigms of part 1"></a></div>
-<p class="slides-caption">From the lecture. Click a slide to enlarge it.</p>
-
-@@md
 
 ## 1 · k-means on two counts
 

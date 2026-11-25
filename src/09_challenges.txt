@@ -3,18 +3,17 @@
 @@md
 # Challenges: can we believe the score?
 
+@@md site
+<div class="slides n1"><a href="_static/slides/two_splits.png"><img src="_static/slides/two_splits.png" alt="Lecture slide: Two ways of testing, two different scores"></a></div>
+<p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
+
+@@md
 ```{admonition} Question
 :class: tip
 Can we believe the score?
 ```
 
 **In this notebook:** 1 · two ways to split  2 · four models, tested twice  3 · other layouts  4 · three cities  5 · who mapped what  6 · a research case
-
-@@md site
-<div class="slides n1"><a href="_static/slides/two_splits.png"><img src="_static/slides/two_splits.png" alt="Lecture slide: Two ways of testing, two different scores"></a></div>
-<p class="slides-caption">From the lecture. Click a slide to enlarge it.</p>
-
-@@md
 
 ## 1 · Two ways to split
 
@@ -50,7 +49,7 @@ for k, (_, te) in enumerate(spatial_folds.split(X, y, groups=blocks)):
     spatial_test[te] = k
 h.plot_folds(hexes, random_test, spatial_test);
 
-@@md
+@@md site
 <img src="_static/figures/4_folds_cycle.gif" alt="Random and spatial folds, one after the other" class="wide">
 
 *The five test folds of each split in turn.*

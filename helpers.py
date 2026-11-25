@@ -1059,3 +1059,66 @@ def plot_layouts(runs, summary):
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=2, fontsize=10)
     plt.tight_layout()
     plt.show()
+
+
+# ------------------------------------------------------------------------------------------------ page: The data (animation)
+TABLE_COLUMNS = {"car": "parking", "play": "play", "office": "offices", "poi_total": "all POIs", "landuse": "land use"}
+MARK = "#d98e00"         # the row and the hexagon that a frame points at
+
+
+def table_and_map(gdf, five_rows, step):
+    """One frame of the animation at the top of the data page: the table of the five hexagons (left) and the map (right).
+    step 0 shows both; step k (1 to 5) marks row k in the table and hexagon k on the map, and joins them with an arrow."""
+    from matplotlib.patches import ConnectionPatch, FancyBboxPatch
+
+    fig = plt.figure(figsize=(12.8, 5.2))
+    ax_t = fig.add_axes([0.01, 0.06, 0.40, 0.80])
+    ax_m = fig.add_axes([0.44, 0.0, 0.56, 0.94])
+    fig.text(0.015, 0.93, "The table", fontsize=15, fontweight="bold", color=INK)
+    fig.text(0.45, 0.93, "The map", fontsize=15, fontweight="bold", color=INK)
+    fig.text(0.56, 0.935, "every row of the table is one hexagon on the map", fontsize=11, color=SECONDARY)
+    # the table, drawn by hand so that a row can be marked
+    ax_t.set_xlim(0, 1)
+    ax_t.set_ylim(0, 7)
+    ax_t.axis("off")
+    heads = ["", "place"] + list(TABLE_COLUMNS.values())
+    xs = [0.04, 0.10, 0.37, 0.48, 0.60, 0.73, 0.89]
+    ax_t.add_patch(FancyBboxPatch((0.31, 6.15), 0.49, 0.7, boxstyle="round,pad=0,rounding_size=0.02", fc="#f6e3f2", ec="none"))
+    ax_t.add_patch(FancyBboxPatch((0.81, 6.15), 0.18, 0.7, boxstyle="round,pad=0,rounding_size=0.02", fc=ACCENT, ec="none"))
+    ax_t.text(0.555, 6.5, "features", ha="center", va="center", fontsize=12, fontweight="bold", color=ACCENT)
+    ax_t.text(0.90, 6.5, "label", ha="center", va="center", fontsize=12, fontweight="bold", color="white")
+    for x, head in zip(xs, heads):
+        ax_t.text(x, 5.65, head, ha="left" if head == "place" else "center", va="center", fontsize=11, color=SECONDARY)
+    ax_t.plot([0.0, 1.0], [5.3, 5.3], color=GRID, lw=1)
+    rows = list(five_rows.items())
+    row_y = lambda k: 5.3 - k * 0.95 + 0.47
+    for k, (name, i) in enumerate(rows, 1):
+        yy, on = row_y(k), step == k
+        if on:
+            ax_t.add_patch(FancyBboxPatch((0.0, yy - 0.4), 1.0, 0.8, boxstyle="round,pad=0,rounding_size=0.03", fc="#fde9c9", ec=MARK, lw=1.5))
+        ax_t.text(xs[0], yy, str(k), ha="center", va="center", fontsize=10, fontweight="bold", color="white",
+                  bbox=dict(boxstyle="circle,pad=0.25", fc=HIGHLIGHT, ec="white", lw=0.8))
+        ax_t.text(xs[1], yy, name, ha="left", va="center", fontsize=12, fontweight="bold" if on else "normal")
+        for x, col in zip(xs[2:], TABLE_COLUMNS):
+            v = gdf[col].iloc[i]
+            is_label = col == "landuse"
+            ax_t.text(x, yy, str(v), ha="center", va="center", fontsize=12, fontweight="bold" if (on or is_label) else "normal",
+                      color=COLORS[v] if is_label else INK)
+    ax_t.text(0.1, 0.25, "... and 1,454 more rows", fontsize=10, color=MUTED, va="center")
+    # the map: all hexagons in the colour of their label; the five rows outlined and numbered
+    gdf.plot(ax=ax_m, color=gdf["landuse"].map(COLORS).tolist(), edgecolor="white", linewidth=0.2, alpha=0.4 if step else 0.85)
+    ax_m.set_axis_off()
+    ax_m.set_aspect("equal")
+    for k, (name, i) in enumerate(rows, 1):
+        on = step == k
+        gdf.iloc[[i]].plot(ax=ax_m, color=COLORS[gdf["landuse"].iloc[i]], edgecolor=MARK if on else HIGHLIGHT, linewidth=3 if on else 1.2, zorder=6)
+        x, y = gdf["x"].iloc[i], gdf["y"].iloc[i]
+        ax_m.annotate(str(k), (x, y), xytext=(9, -13), textcoords="offset points", fontsize=10, fontweight="bold", color="white",
+                      ha="center", va="center", zorder=8, bbox=dict(boxstyle="circle,pad=0.25", fc=HIGHLIGHT, ec="white", lw=0.8))
+        if on:
+            ax_m.scatter([x], [y], s=900, facecolors="none", edgecolors=MARK, linewidths=2.5, zorder=7)
+            ax_m.annotate(name, (x, y), xytext=(16, 10), textcoords="offset points", fontsize=12, fontweight="bold", zorder=9,
+                          bbox=dict(boxstyle="round,pad=0.25", fc="white", ec=MARK, lw=1.2))
+            fig.add_artist(ConnectionPatch((1.0, row_y(k)), (x, y), coordsA=ax_t.transData, coordsB=ax_m.transData, color=MARK, lw=2,
+                                           arrowstyle="-|>", mutation_scale=16, zorder=10))
+    return fig

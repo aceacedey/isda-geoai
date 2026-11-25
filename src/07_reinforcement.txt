@@ -3,18 +3,17 @@
 @@md
 # Reinforcement learning: only rewards
 
+@@md site
+<div class="slides n1"><a href="_static/slides/courier.png"><img src="_static/slides/courier.png" alt="Lecture slide: Learning from rewards: try, score, try again"></a></div>
+<p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
+
+@@md
 ```{admonition} Question
 :class: tip
 How does a robot get from 152 moves to 14?
 ```
 
 **In this notebook:** 1 · a street grid  2 · one move  3 · learning by trying  4 · 300 tries  5 · the learned route
-
-@@md site
-<div class="slides n1"><a href="_static/slides/courier.png"><img src="_static/slides/courier.png" alt="Lecture slide: Learning from rewards: try, score, try again"></a></div>
-<p class="slides-caption">From the lecture. Click a slide to enlarge it.</p>
-
-@@md
 
 ## 1 · A street grid
 

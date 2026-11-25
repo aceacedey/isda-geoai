@@ -1,6 +1,10 @@
 # GeoAI on Helsinki hexagons
 
-A worked example for the two lectures *Machine Learning & GeoAI approaches to spatial data analysis* of the course GIS-E1130 Introduction to Spatial Data Analysis (Aalto University).
+<img src="_static/figures/0_table_and_map.gif" class="wide" alt="Animation: each row of the table is one hexagon on the map">
+
+A worked example for the two lectures *Machine Learning & GeoAI approaches to spatial data analysis* of the course [GIS-E1130 Introduction to Spatial Data Analysis](https://introsda.readthedocs.io/en/latest/) (Aalto University).
+
+**Lecture slides:** [Introduction to GeoAI, part 1](https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI.html) · [part 2](https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html), on the course site.
 
 **One dataset, every method of the two lectures.** The Helsinki region as 1,459 hexagons. Each hexagon is one row of a table and one place on a map: 16 counts of points of interest and one land-use label, from OpenStreetMap.
 
@@ -56,6 +60,15 @@ challenges
 :maxdepth: 1
 
 own_data
+```
+
+```{toctree}
+:caption: The course
+:maxdepth: 1
+
+Introduction to Spatial Data Analysis <https://introsda.readthedocs.io/en/latest/>
+Lecture: GeoAI, part 1 <https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI.html>
+Lecture: GeoAI, part 2 <https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html>
 ```
 
 ## Seven questions of part 2

@@ -1,5 +1,8 @@
 # Getting started
 
+<div class="slides n2"><a href="_static/slides/today.png"><img src="_static/slides/today.png" alt="Lecture slide: Today: three learning paradigms, spatially explicit models"></a><a href="_static/slides/website.png"><img src="_static/slides/website.png" alt="Lecture slide: The website: one short notebook per method"></a></div>
+<p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
+
 ```{admonition} Question
 :class: tip
 How do I read the notebooks, and how do I run them on my own laptop?
@@ -9,10 +12,7 @@ How do I read the notebooks, and how do I run them on my own laptop?
 
 ## 1 · Where the site fits in the lecture
 
-<div class="slides n2"><a href="_static/slides/today.png"><img src="_static/slides/today.png" alt="Lecture slide: Today: three learning paradigms, spatially explicit models"></a><a href="_static/slides/website.png"><img src="_static/slides/website.png" alt="Lecture slide: The website: one short notebook per method"></a></div>
-<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
-
-The lecture shows each method on slides. This site shows the same method on real data: the Helsinki region as 1,459 hexagons. Each page is one short notebook with one question.
+This site belongs to the course [Introduction to Spatial Data Analysis](https://introsda.readthedocs.io/en/latest/), week 10. The lecture shows each method on slides ([part 1](https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI.html), [part 2](https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html) on the course site). This site shows the same method on real data: the Helsinki region as 1,459 hexagons. Each page is one short notebook with one question, and opens with the slides that belong to it.
 
 ## 2 · Read online
 

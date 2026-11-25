@@ -3,18 +3,17 @@
 @@md
 # Self-supervised learning: no labels
 
+@@md site
+<div class="slides n2"><a href="_static/slides/pretext_stages.png"><img src="_static/slides/pretext_stages.png" alt="Lecture slide: No labels: two stages, two kinds of labels"></a><a href="_static/slides/embedding_uses.png"><img src="_static/slides/embedding_uses.png" alt="Lecture slide: What embeddings are used for: four examples"></a></div>
+<p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
+
+@@md
 ```{admonition} Question
 :class: tip
 Can a model describe places without any label?
 ```
 
 **In this notebook:** 1 · a pretext task  2 · the embedding  3 · places like Otaniemi  4 · two checks  5 · 30 labels
-
-@@md site
-<div class="slides n2"><a href="_static/slides/pretext_stages.png"><img src="_static/slides/pretext_stages.png" alt="Lecture slide: No labels: two stages, two kinds of labels"></a><a href="_static/slides/embedding_uses.png"><img src="_static/slides/embedding_uses.png" alt="Lecture slide: What embeddings are used for: four examples"></a></div>
-<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
-
-@@md
 
 ## 1 · A pretext task
 
