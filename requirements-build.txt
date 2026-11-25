@@ -1,0 +1,10 @@
+# For the teacher: to build the site (build_site.py) and the dataset (build_dataset.py). Install with:
+#   pip install -r requirements-build.txt
+-r requirements.txt
+folium==0.15.1
+nbformat>=5.10
+nbclient>=0.10
+ipykernel>=6.29
+# only for build_dataset.py, which downloads the OpenStreetMap data again
+h3==3.7.7
+osmnx==2.0.5

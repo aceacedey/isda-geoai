@@ -15,7 +15,8 @@ Run:   python build_site.py                    every page
        python build_site.py text               after an edit of text only: keep the stored outputs (stops if code changed)
 Then:  python -m sphinx -b html docs docs/_build/html        (to look at the site on this computer)
 
-Source format: a line '@@page slug' starts a page; '@@md' starts a text cell; '@@code' starts a code cell that is shown
+Source format: a line '@@page slug' starts a page; '@@md' starts a text cell; '@@md site' a text cell that only the website
+shows, not the notebook for download (the lecture slides); '@@code' starts a code cell that is shown
 on the website; '@@code fold' one that is folded; '@@code hidden' one that is left out of the website and of the
 notebook for download (only for the teacher's plumbing: slider frames, the interactive map, numbers for the slides).
 """
@@ -50,8 +51,12 @@ def read_sources():
             text = "\n".join(buf).strip("\n")
             if kind is None or not text:
                 return
-            cell = new_markdown_cell(text) if kind == "md" else new_code_cell(text)
-            if kind != "md":
+            if kind.startswith("md"):
+                cell = new_markdown_cell(text)
+                if kind == "md site":                     # shown on the website only: the lecture slides
+                    cell.metadata["tags"] = ["site-only"]
+            else:
+                cell = new_code_cell(text)
                 cell.metadata["tags"] = list(TAGS[kind])
             cells.append(cell)
 
@@ -59,7 +64,7 @@ def read_sources():
             s = line.strip()
             if s.startswith("@@page "):
                 slug = s.split()[1]
-            elif s == "@@md" or s in ("@@" + k for k in TAGS):
+            elif s in ("@@md", "@@md site") or s in ("@@" + k for k in TAGS):
                 flush()
                 kind, buf = s[2:], []
             else:
@@ -149,7 +154,7 @@ def main(args):
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
     for slug, nb in pages.items():
-        clean = new_notebook(cells=[c for c in nb.cells if "remove-cell" not in c.metadata.get("tags", [])], metadata=META)
+        clean = new_notebook(cells=[c for c in nb.cells if not {"remove-cell", "site-only"} & set(c.metadata.get("tags", []))], metadata=META)
         for c in clean.cells:
             c.metadata.pop("tags", None)
         nbformat.write(clean, out / f"{slug}.ipynb")

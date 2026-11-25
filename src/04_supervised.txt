@@ -10,6 +10,12 @@ How well does a fitted model predict hexagons it has not seen?
 
 **In this notebook:** 1 · two tasks  2 · a line  3 · training  4 · a decision boundary  5 · unseen hexagons  6 · flexibility
 
+@@md site
+<div class="slides n2"><a href="_static/slides/split.png"><img src="_static/slides/split.png" alt="Lecture slide: Training, validation, test: one table, three parts"></a><a href="_static/slides/ways_part1.png"><img src="_static/slides/ways_part1.png" alt="Lecture slide: From training data to test data: the two paradigms of part 1"></a></div>
+<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
+
+@@md
+
 ## 1 · Two tasks
 
 **Supervised learning** fits a rule to rows whose answer is known. The answer is a category (**classification**) or a number (**regression**).

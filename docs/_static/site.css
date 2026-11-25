@@ -33,3 +33,11 @@ img.wide { display: block; width: 100%; max-width: 860px; margin: 0.6rem auto; }
 p.nb-download { font-size: 0.9rem; color: var(--grey); margin: -0.4rem 0 1rem 0; }
 p.nb-download a { font-weight: 700; }
 div.cell div.cell_input { border-left: 3px solid var(--accent); }
+
+/* slides of the lecture at the top of a page */
+div.slides { display: grid; gap: 0.6rem; margin: 0.8rem 0 0.2rem 0; }
+div.slides.n2 { grid-template-columns: 1fr 1fr; }
+div.slides img { display: block; width: 100%; border: 1px solid var(--stone); border-radius: 6px; }
+div.slides.n1 img { max-width: 640px; }
+p.slides-caption { font-size: 0.85rem; color: var(--grey); margin: 0 0 1.2rem 0; }
+@media (max-width: 700px) { div.slides.n2 { grid-template-columns: 1fr; } }

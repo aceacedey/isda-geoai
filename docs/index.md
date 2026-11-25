@@ -13,9 +13,16 @@ Every page is a short notebook. It asks one question and answers it step by step
 3. its output,
 4. the result in one line.
 
-Each notebook runs by itself. Download one from the link under its title, or all of them together with the data: <a href="_static/geoai_hexagons.zip" download>geoai_hexagons.zip</a>. Unpack, install the packages of `requirements.txt`, and run the cells from the top.
+Each notebook runs by itself. [Getting started](setup) says how to install Python and the packages and how to run the notebooks on your laptop. Each page also shows the slides of the lecture that belong to it.
 
 ## The notebooks
+
+```{toctree}
+:caption: Start here
+:maxdepth: 1
+
+setup
+```
 
 ```{toctree}
 :caption: The data

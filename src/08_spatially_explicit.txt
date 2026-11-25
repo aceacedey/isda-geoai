@@ -10,6 +10,12 @@ Which of our models is spatially explicit?
 
 **In this notebook:** 1 · the spatial lag  2 · the neighbours alone  3 · three models  4 · moved places  5 · the invariance test  6 · smaller hexagons
 
+@@md site
+<div class="slides n2"><a href="_static/slides/spatially_explicit.png"><img src="_static/slides/spatially_explicit.png" alt="Lecture slide: Spatially explicit: location goes into the model"></a><a href="_static/slides/four_tests.png"><img src="_static/slides/four_tests.png" alt="Lecture slide: When is a model spatially explicit?"></a></div>
+<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
+
+@@md
+
 ## 1 · The spatial lag
 
 A table has no geography. The **spatial lag** of week 3 writes the map into it: a column's average over the hexagons that touch a hexagon.

@@ -10,6 +10,12 @@ Can a model describe places without any label?
 
 **In this notebook:** 1 · a pretext task  2 · the embedding  3 · places like Otaniemi  4 · two checks  5 · 30 labels
 
+@@md site
+<div class="slides n2"><a href="_static/slides/pretext_stages.png"><img src="_static/slides/pretext_stages.png" alt="Lecture slide: No labels: two stages, two kinds of labels"></a><a href="_static/slides/embedding_uses.png"><img src="_static/slides/embedding_uses.png" alt="Lecture slide: What embeddings are used for: four examples"></a></div>
+<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
+
+@@md
+
 ## 1 · A pretext task
 
 A **pretext task** is a task whose answers are already in the data. Ours: from the counts of a hexagon, predict the counts around it, `W @ X` (the spatial lag of week 3).

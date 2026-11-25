@@ -28,12 +28,14 @@ build_dataset.py     builds the tables again from OpenStreetMap (not needed to b
 docs/                the Sphinx project that Read the Docs builds: conf.py, index.md, the page notebooks, _static/
 ```
 
+`requirements.txt` lists what a student needs to run the notebooks; `requirements-build.txt` adds what the teacher needs to build the site and the dataset. The page *Getting started* (`docs/setup.md`) is written by hand. The pictures in `docs/_static/slides/` are slides of the lecture deck, exported at 1280 × 720 pixels; the deck itself is not in this repository.
+
 The page notebooks in `docs/` carry their outputs, so Read the Docs installs only Sphinx, MyST-NB and the Furo theme (`docs/requirements.txt`) and runs no analysis code. For download, `docs/_static/notebooks/` holds every notebook without outputs, and `docs/_static/geoai_hexagons.zip` holds all of them with `helpers.py`, `requirements.txt` and the data.
 
 ### After an edit
 
 ```
-pip install -r requirements.txt            # once: the packages of the analysis
+pip install -r requirements-build.txt      # once: the packages of the notebooks, and those to build the site and the dataset
 python build_site.py                       # runs every page again, four at a time
 python build_site.py data supervised       # runs only these pages
 python build_site.py text                  # after a change of text only: keeps the stored outputs
@@ -43,7 +45,7 @@ sphinx-build -b html docs docs/_build/html # the site on this computer: open doc
 
 The sliders and the interactive map need a web server, because a browser does not load them from a `file://` address: `python -m http.server --directory docs/_build/html` and then <http://localhost:8000>.
 
-Source format: `@@page slug` starts a page, `@@md` a text cell, `@@code` a code cell that is shown, `@@code fold` one that is folded, and `@@code hidden` one that is left out of the site and of the notebook for download. Hidden cells hold only the teacher's plumbing: the frames of a slider, the interactive map, numbers for the slides.
+Source format: `@@page slug` starts a page, `@@md` a text cell, `@@md site` a text cell that only the website shows (the lecture slides), `@@code` a code cell that is shown, `@@code fold` one that is folded, and `@@code hidden` one that is left out of the site and of the notebook for download. Hidden cells hold only the teacher's plumbing: the frames of a slider, the interactive map, numbers for the slides.
 
 Rules of a page: at most six steps; one to three sentences before a code cell; a shown code cell of at most 12 lines (a learning step that is written out may be longer); drawing code lives in `helpers.py`; a page stays under about 450 words of text.
 

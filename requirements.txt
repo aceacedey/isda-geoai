@@ -1,4 +1,5 @@
-# to run the notebook and build_site.py (the versions the site was built with)
+# To run the notebooks: Python 3.10, 3.11 or 3.12 (the site was built with 3.11). Install with:
+#   pip install -r requirements.txt
 numpy==1.26.4
 pandas==2.2.3
 scipy==1.12.0
@@ -7,10 +8,4 @@ matplotlib==3.8.2
 geopandas==1.1.1
 shapely==2.1.1
 pyogrio==0.9.0
-folium==0.15.1
-nbformat>=5.10
-nbclient>=0.10
-ipykernel>=6.29
-# only for build_dataset.py, which downloads the OpenStreetMap data again
-h3==3.7.7
-osmnx==2.0.5
+jupyterlab>=4.1

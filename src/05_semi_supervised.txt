@@ -10,6 +10,12 @@ With 30 labelled hexagons, do the other 1,429 help?
 
 **In this notebook:** 1 · choose 30 hexagons  2 · self-training  3 · one run  4 · twelve draws  5 · a cautious model  6 · label propagation
 
+@@md site
+<div class="slides n2"><a href="_static/slides/loop_start.png"><img src="_static/slides/loop_start.png" alt="Lecture slide: Self-training: the toy dataset, 4 labelled points"></a><a href="_static/slides/loop_end.png"><img src="_static/slides/loop_end.png" alt="Lecture slide: Self-training: after 8 rounds"></a></div>
+<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
+
+@@md
+
 ## 1 · Choose 30 hexagons
 
 A label costs a field visit, and the budget covers 30. Two ways to choose them: at random, or 10 per class, which needs an older map of the classes.

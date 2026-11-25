@@ -10,6 +10,12 @@ What does it mean that a machine learns?
 
 **In this notebook:** 1 · task, experience, performance  2 · give the program more experience  3 · five ways to learn
 
+@@md site
+<div class="slides n2"><a href="_static/slides/ways_today.png"><img src="_static/slides/ways_today.png" alt="Lecture slide: From training data to test data: the three paradigms of today"></a><a href="_static/slides/history.png"><img src="_static/slides/history.png" alt="Lecture slide: Why new paradigms? Four landmark results"></a></div>
+<p class="slides-caption">From the lecture (two slides). Click a slide to enlarge it.</p>
+
+@@md
+
 ## 1 · Task, experience, performance
 
 A program **learns** if its performance at a task improves with experience (Mitchell, 1997).

@@ -10,6 +10,12 @@ What does one row of our table look like on the map?
 
 **In this notebook:** 1 · load the table  2 · read five rows  3 · put them on the map  4 · see where the label comes from  5 · compare neighbours
 
+@@md site
+<div class="slides n1"><a href="_static/slides/words.png"><img src="_static/slides/words.png" alt="Lecture slide: From machine learning to GeoAI: a table, then a map"></a></div>
+<p class="slides-caption">From the lecture. Click a slide to enlarge it.</p>
+
+@@md
+
 ## 1 · Load the table
 
 The Helsinki region as 1,459 hexagons of the H3 grid (week 7), each about 0.57 km². One hexagon is one **row**. Everything comes from OpenStreetMap.
