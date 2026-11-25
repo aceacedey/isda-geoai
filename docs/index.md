@@ -1,17 +1,21 @@
 # GeoAI on Helsinki hexagons
 
-This site belongs to the two lectures *Machine Learning & GeoAI approaches to spatial data analysis* of the course GIS-E1130 Introduction to Spatial Data Analysis at Aalto University. The lectures introduce the ways in which a machine can learn. Each page of this site takes one of those ways and shows it on the same small dataset: the Helsinki region divided into 1,459 hexagons, each with 16 counts of points of interest and one land-use label from OpenStreetMap.
+A worked example for the two lectures *Machine Learning & GeoAI approaches to spatial data analysis* of the course GIS-E1130 Introduction to Spatial Data Analysis (Aalto University).
 
-<div class="roadmap"><div class="rm-question"><b>One dataset, every concept of the two lectures</b><span>A hexagon is one row of a table and one place on a map. Every page asks one question of that table and that map, and answers it with a figure.</span></div><div class="rm-steps"><div class="rm-step"><b>The data</b><span>a table and a map</span></div><div class="rm-step"><b>Part 1</b><span>what learning is; learning without and with answers</span></div><div class="rm-step"><b>Part 2</b><span>few answers, no answers, rewards; models that use location; what can go wrong</span></div><div class="rm-step"><b>Your own data</b><span>the same notebook on another table</span></div></div></div>
+**One dataset, every method of the two lectures.** The Helsinki region as 1,459 hexagons. Each hexagon is one row of a table and one place on a map: 16 counts of points of interest and one land-use label, from OpenStreetMap.
 
-## How to read a page
+## How a page works
 
-- Every page opens with a road map: what the pages before it showed, the question of the page, and the steps that answer it.
-- Every figure is followed by a short paragraph headed *What did we just see?*
-- The code that made a figure is folded above it. Click *Show code cell source* to read it.
-- Some figures have a slider. The pictures behind a slider were drawn beforehand, so nothing is computed while you move it.
+Every page is a short notebook. It asks one question and answers it step by step:
 
-## The pages
+1. a line of text,
+2. a code cell,
+3. its output,
+4. the result in one line.
+
+Each notebook runs by itself. Download one from the link under its title, or all of them together with the data: <a href="_static/geoai_hexagons.zip" download>geoai_hexagons.zip</a>. Unpack, install the packages of `requirements.txt`, and run the cells from the top.
+
+## The notebooks
 
 ```{toctree}
 :caption: The data
@@ -47,10 +51,18 @@ challenges
 own_data
 ```
 
-## Run it yourself
+## Seven questions of part 2
 
-All pages together are one Jupyter notebook: <a href="_static/GeoAI_Helsinki_hexagons.ipynb" download>download GeoAI_Helsinki_hexagons.ipynb</a>. The notebook needs the files `helpers.py` and `data/helsinki_hex_r8.gpkg` of the repository next to it, and the Python packages listed in `requirements.txt`. It runs in about four minutes on a laptop. The page [Your own data](own_data) says what to change for another city or another table.
+| Notebook | Question |
+|---|---|
+| [The data](data) | What does one row of our table look like on the map? |
+| [Supervised learning](supervised) | How well does a fitted model predict hexagons it has not seen? |
+| [Semi-supervised learning](semi_supervised) | With 30 labelled hexagons, do the other 1,429 help? |
+| [Self-supervised learning](self_supervised) | Can a model describe places without any label? |
+| [Reinforcement learning](reinforcement) | How does a robot get from 152 moves to 14? |
+| [Spatially explicit models](spatially_explicit) | Which of our models is spatially explicit? |
+| [Challenges](challenges) | Can we believe the score? |
 
 ## Data and licence
 
-The points of interest and the land-use polygons are © OpenStreetMap contributors and available under the Open Database License (ODbL). The hexagons are cells of the H3 grid at resolution 8. The script `build_dataset.py` of the repository builds the table from these sources. The text and the figures of this site are licensed CC BY-SA 4.0.
+Points of interest and land-use polygons: © OpenStreetMap contributors, Open Database License (ODbL). Hexagons: cells of the H3 grid at resolution 8. Text and figures: CC BY-SA 4.0.

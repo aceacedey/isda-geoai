@@ -3,23 +3,32 @@
 @@md
 # Unsupervised learning: groups without names
 
-<div class="roadmap"><div class="rm-sofar"><span>So far</span>A program learns if its performance at a task improves with experience.</div><div class="rm-question"><b>What can be found in data when nobody says what to look for?</b><span>Clustering: k-means puts the hexagons into K groups with similar counts. No label is used.</span></div><div class="rm-steps"><div class="rm-step"><b>k-means</b><span>centres, nearest centre, move, repeat</span></div><div class="rm-step"><b>Groups on the map</b><span>three groups, without names</span></div><div class="rm-step"><b>How many groups?</b><span>the elbow method</span></div><div class="rm-step"><b>Groups and labels</b><span>who names a group?</span></div></div></div>
+```{admonition} Question
+:class: tip
+What groups does a model find when it is given no labels?
+```
 
-On this page the land-use label is put aside. All the method sees is the 16 counts of every hexagon.
+**In this notebook:** 1 · k-means on two counts  2 · three groups on the map  3 · how many groups  4 · who names a group
 
-## 1. How k-means works
+## 1 · k-means on two counts
 
-Clustering groups observations so that those within a group are as similar as possible and those of different groups as dissimilar as possible. The best-known method is **k-means**, and it needs one number from us: K, the number of groups. It then repeats two steps.
-
-1. Put every hexagon into the group whose centre is nearest.
-2. Move every centre to the average of its group.
-
-It stops when no hexagon changes its group. The slider shows these steps for two of the 16 counts, because two counts can be drawn. At the start the three centres are three hexagons picked at random.
+**Clustering** puts rows into groups so that the rows of a group are alike. The land-use label is put aside: the method sees only the counts.
 
 @@code
-two_counts = X[:, [FEATURES.index("car"), FEATURES.index("play")]]          # parking and fuel, playgrounds: two counts that can be drawn
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
+import helpers as h
 
+hexes, X, y, W = h.load()        # the table, the features, the labels, the neighbours
+SEED = 0
+
+@@md
+**k-means** needs one number from us: K, the number of groups. It starts from K hexagons picked at random as centres and repeats two steps until no hexagon changes its group.
+
+@@code
 def kmeans_steps(points, k=3, steps=8, seed=3):
     """k-means written out: returns, for every step, the centres and the group of every point."""
     centres = points[np.random.default_rng(seed).choice(len(points), k, replace=False)]
@@ -30,110 +39,91 @@ def kmeans_steps(points, k=3, steps=8, seed=3):
         centres = np.array([points[group == g].mean(axis=0) if (group == g).any() else centres[g] for g in range(k)])   # step 2: move the centres
     return history
 
+@@md
+Two of the 16 counts, `car` and `play`, because two counts can be drawn.
 
+@@code
+two_counts = X[:, [h.FEATURES.index("car"), h.FEATURES.index("play")]]
 steps_2d = kmeans_steps(two_counts)
 print("hexagons that change their group from one step to the next:",
       [int((steps_2d[i][1] != steps_2d[i - 1][1]).sum()) for i in range(1, len(steps_2d))])
+h.plot_kmeans_step(two_counts, steps_2d, len(steps_2d) - 1);
 
-@@code slider
-def draw_step(i):
-    centres, group = steps_2d[i]
-    fig, ax = plt.subplots(figsize=(6.4, 4.8))
-    P = h.spread(two_counts, 0.16)
-    ax.scatter(P[:, 0], P[:, 1], s=8, color=[h.CLUSTER_COLORS[g] for g in group], alpha=0.5, linewidths=0)
-    ax.scatter(centres[:, 0], centres[:, 1], s=320, marker="*", color=[h.CLUSTER_COLORS[g] for g in range(len(centres))], edgecolor=h.INK, linewidths=1.5, zorder=5)
-    h.count_ticks(ax, "x", (0, 1, 3, 10, 30, 100)), h.count_ticks(ax, "y", (0, 1, 3, 10, 30, 100))
-    ax.set_xlabel("parking and fuel in the hexagon"), ax.set_ylabel("playgrounds in the hexagon")
-    changed = int((group != steps_2d[i - 1][1]).sum()) if i else None
-    ax.set_title(f"step {i + 1}: every hexagon joins its nearest centre (star)" if i == 0 else
-                 f"step {i + 1}: {changed} hexagons changed their group" if changed else f"step {i + 1}: no hexagon changed its group")
-    fig.tight_layout()
-    return fig
-
-
-fig = draw_step(len(steps_2d) - 1)
-plt.show()
-if SAVE:
-    h.frames(draw_step, range(len(steps_2d)), "kmeans_steps")
+@@code hidden
+if h.SAVE:    # the frames of the slider
+    h.frames(lambda i: h.plot_kmeans_step(two_counts, steps_2d, i), range(len(steps_2d)), "kmeans_steps")
 
 @@md
 <div class="frames" data-name="kmeans_steps" data-prefix="step" data-first="1"></div>
 
-*k-means on two counts, step by step. The stars are the centres. The colours tell the groups apart and have no other meaning.*
+*The stars are the centres. The colours only tell the groups apart.*
 
-## 2. Three groups on the map
+**Result.** 244 hexagons change their group at the second step, then 34, 18, 10, 5 and 2. At the eighth step none does, and k-means stops.
 
-Now all 16 counts are used, and K is set to 3. The map on the left shows the groups that k-means found. The map on the right shows the land-use label, which k-means never saw.
+## 2 · Three groups on the map
+
+Now all 16 counts, each on the same scale so that no count outweighs the others. k-means runs for K from 2 to 8. The maps show K = 3.
 
 @@code
-Zk = StandardScaler().fit_transform(X)                 # every count on the same scale, so that no count outweighs the others
+Zk = StandardScaler().fit_transform(X)
 KS = list(range(2, 9))
 kmeans = {k: KMeans(n_clusters=k, n_init=10, random_state=SEED).fit(Zk) for k in KS}
 groups = kmeans[3].labels_
+h.map_kmeans_and_labels(hexes, groups, y);
 
-fig, axes = plt.subplots(1, 2, figsize=(15, 5.6))
-h.map_clusters(hexes, groups, ax=axes[0], title="Three groups found by k-means (no label was used)")
-h.map_classes(hexes, y, ax=axes[1], title="The land-use label, for comparison", places=False)
-plt.tight_layout()
-plt.show()
-
-
-def draw_k(k):
-    fig, ax = plt.subplots(figsize=(8.6, 6))
-    h.map_clusters(hexes, kmeans[k].labels_, ax=ax, title=f"k-means with K = {k}")
-    return fig
-
-
-if SAVE:
-    h.frames(draw_k, KS, "kmeans")
+@@code hidden
+if h.SAVE:    # the frames of the slider
+    h.frames(lambda k: h.map_kmeans(hexes, kmeans[k].labels_, k), KS, "kmeans")
 
 @@md
-The groups form patches on the map although k-means was given no coordinates: hexagons with similar counts tend to lie next to each other (step 4 puts a number on this). With another K the same hexagons fall into other groups; move the slider.
+The groups form patches, although k-means was given no coordinates. With another K the same hexagons fall into other groups.
 
 <div class="frames" data-name="kmeans" data-labels="K = 2|K = 3|K = 4|K = 5|K = 6|K = 7|K = 8"></div>
 
-*The groups of k-means for K from 2 to 8.*
+## 3 · How many groups?
 
-## 3. How many groups?
-
-Nothing in the data says what K should be. The **elbow method** of part 1 of the lecture runs k-means for several values of K and plots, for each, how far the hexagons lie from the centre of their group (the within-cluster sum of squares). The value falls with every added group; one looks for the K after which it falls only slowly.
+Nothing in the data says what K should be. The **elbow method** plots, for every K, the within-cluster sum of squares: how far the hexagons lie from the centre of their group. One looks for the K after which it falls only slowly.
 
 @@code
 wcss = pd.Series({k: kmeans[k].inertia_ for k in KS})
-fig, ax = plt.subplots(figsize=(6.4, 4))
-ax.plot(wcss.index, wcss.values, "o-", color=h.ACCENT, lw=2.5)
-ax.set_xlabel("K, the number of groups")
-ax.set_ylabel("within-cluster sum of squares")
-ax.set_title("The elbow method")
-plt.show()
 print("fall of the sum of squares with each added group:", {f"{k - 1} to {k}": f"{1 - wcss[k] / wcss[k - 1]:.0%}" for k in KS[1:]})
-h.note("elbow", {int(k): round(float(1 - wcss[k] / wcss[k - 1]), 3) for k in KS[1:]}, SAVE)
+h.plot_elbow(wcss);
+
+@@code hidden
+h.note("elbow", {int(k): round(float(1 - wcss[k] / wcss[k - 1]), 3) for k in KS[1:]})
 
 @@md
-> **What did we just see?** The third group reduces the sum of squares by 22%, the fourth by 12%, the fifth by 7%, and every later group by 6% or less. The curve bends between K = 3 and K = 4 and has no sharp elbow, which is common with real data. The elbow method therefore gives a range, and the choice within the range depends on what the groups are for. We keep K = 3, because the land-use label has three classes and the next step compares the groups with it.
+**Result.** The third group lowers the sum of squares by 22%, the fourth by 12%, the fifth by 7%. The curve bends between 3 and 4 groups. Real data rarely give a sharp elbow. We keep K = 3, the number of land-use classes.
 
-## 4. Groups and labels: who names a group?
+## 4 · Who names a group?
 
-k-means returns group 1, group 2 and group 3. It does not say what they are. The table counts, for each group, how many of its hexagons carry each land-use label.
+k-means returns group 1, 2 and 3, without names. The table counts the labels in each group and the points of interest (POIs) of its typical hexagon.
 
 @@code
 table = pd.crosstab(pd.Series(groups + 1, name="group"), pd.Series(y, name="land use"))
 table["hexagons"] = table.sum(axis=1)
-table["median POIs"] = pd.Series(hexes["poi_total"].to_numpy()).groupby(groups + 1).median().astype(int)      # points of interest in a typical hexagon of the group
-named = table[CLASSES].idxmax(axis=1)                       # the most frequent land use of each group
+table["median POIs"] = pd.Series(hexes["poi_total"].to_numpy()).groupby(groups + 1).median().astype(int)
+named = table[h.CLASSES].idxmax(axis=1)                       # the most frequent land use of each group
 agree = float((named.reindex(groups + 1).to_numpy() == y).mean())
 print(table.to_string())
 print("\nmost frequent land use of each group:", named.to_dict())
-print(f"If every group is named after its most frequent land use, {agree:.0%} of the hexagons get their own label (always answering 'green': {(y == 'green').mean():.0%}).")
-same_group = np.mean([np.mean(groups[W[i].indices] == groups[i]) for i in range(len(groups)) if W[i].nnz])
-group_chance = (pd.Series(groups).value_counts(normalize=True) ** 2).sum()
-print(f"A hexagon shares its group with {same_group:.0%} of its neighbours (if the groups were scattered at random: {group_chance:.0%}).")
-h.note("clusters", {"named": {int(k): v for k, v in named.items()}, "agree": round(agree, 3), "same_group": round(float(same_group), 2),
-                    "chance": round(float(group_chance), 2)}, SAVE)
+print(f"named after it, {agree:.0%} of the hexagons get their own label (always answering green: {(y == 'green').mean():.0%})")
 
 @@md
-> **What did we just see?** Group 1 holds 920 hexagons, of which 670 are green. Group 2 is mostly residential. Group 3, with 97 hexagons, is mostly residential too, and no group is mostly work. k-means therefore did not find the three land uses. The last column shows what it found: a typical hexagon has 4 points of interest in group 1, 69 in group 2 and 242 in group 3. The groups are three levels of activity.
->
-> Two points follow. First, the groups come without names. To name them we needed the land-use label, which is an answer from outside the counts, and even then only 72% of the hexagons receive their own label (51% if every hexagon is called green). Second, a clustering answers the question that the features pose, here *how much is there in a hexagon?*, and that need not be the question we have in mind. The page on supervised learning gives the method the answers.
->
-> The last printed line supports what the maps showed: a hexagon shares its group with 73% of its neighbours, against 49% for groups scattered at random, although k-means never saw a coordinate.
+**Result.** No group is mostly `work`. The groups are three levels of activity: 4, 69 and 242 POIs in a typical hexagon. A clustering answers the question that the features pose, here how much there is in a hexagon.
+
+How often does a hexagon share its group with a hexagon that touches it?
+
+@@code
+same_group = np.mean([np.mean(groups[W[i].indices] == groups[i]) for i in range(len(groups)) if W[i].nnz])
+group_chance = (pd.Series(groups).value_counts(normalize=True) ** 2).sum()
+print(f"same group as a neighbour: {same_group:.0%}     if the groups were scattered at random: {group_chance:.0%}")
+
+@@code hidden
+h.note("clusters", {"named": {int(k): v for k, v in named.items()}, "agree": round(agree, 3), "same_group": round(float(same_group), 2),
+                    "chance": round(float(group_chance), 2)})
+
+@@md
+**Result.** 73% against 49%: hexagons with similar counts lie next to each other. Naming the groups needed the label, an answer from outside the counts, and then 72% of the hexagons get their own label.
+
+**Next:** [supervised learning](supervised)

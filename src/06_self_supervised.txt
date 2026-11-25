@@ -3,25 +3,47 @@
 @@md
 # Self-supervised learning: no labels
 
-<div class="roadmap"><div class="rm-sofar"><span>So far</span>With 30 labels, the unlabelled rows repaired a skewed sample and added little otherwise.</div><div class="rm-question"><b>Can a model learn what places are like when nobody tells it anything?</b><span>Self-supervised learning: the model predicts one part of the data from another (a pretext task) and keeps the description it had to form (an embedding).</span></div><div class="rm-steps"><div class="rm-step"><b>Pretext task</b><span>guess the neighbours of a hexagon</span></div><div class="rm-step"><b>Embedding</b><span>a place as 8 numbers</span></div><div class="rm-step"><b>Similar places</b><span>which hexagons are most like Otaniemi?</span></div><div class="rm-step"><b>Going deeper</b><span>does it help prediction?</span></div></div></div>
+```{admonition} Question
+:class: tip
+Can a model describe places without any label?
+```
 
-Self-training passes labels along the features, so it can only be as good as those features are at placing similar hexagons together. Can such features be learned before any label exists? The trick of self-supervised learning is to invent a task whose answers are already in the data, a *pretext task*. Ours:
+**In this notebook:** 1 · a pretext task  2 · the embedding  3 · places like Otaniemi  4 · two checks  5 · 30 labels
 
-> *From a hexagon's own POI profile, guess its neighbours' profile.*
+## 1 · A pretext task
 
-Nobody labelled anything. The target is `W @ X`, the spatial lag of week 3. The model that learns this task is a small neural network: layers of simple units, each of which passes numbers on to the next layer. To do well, the network has to work out what kind of place a hexagon is, because the same kinds of places tend to have the same kinds of surroundings. We force it to pass that knowledge through a narrow layer of 8 numbers. Those 8 numbers are the **embedding**.
-
-## The experiment
+A **pretext task** is a task whose answers are already in the data. Ours: from the counts of a hexagon, predict the counts around it, `W @ X` (the spatial lag of week 3).
 
 @@code
-own = StandardScaler().fit_transform(X)              # input: my own POI profile
-around = StandardScaler().fit_transform(X_around)    # target: my neighbours' profile (no land-use label anywhere)
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+
+import helpers as h
+
+hexes, X, y, W = h.load()        # the table, the features, the labels, the neighbours
+SEED = 0
+
+@@md
+The model is a small neural network with a narrow layer of 8 units in the middle. Whatever it learns about a hexagon has to pass through those 8 numbers.
+
+@@code
+own = StandardScaler().fit_transform(X)              # input: the counts of the hexagon itself
+around = StandardScaler().fit_transform(W @ X)       # target: the counts around it (no land-use label anywhere)
 
 net = MLPRegressor(hidden_layer_sizes=(32, 8, 32), alpha=1e-3, max_iter=3000, random_state=SEED)
 net.fit(own, around)
-print(f"Pretext task, on the hexagons the network was trained on: R² = {net.score(own, around):.2f}")
+print(f"pretext task, on the hexagons the network was trained on: R² = {net.score(own, around):.2f}")
 
+@@md
+## 2 · The embedding
 
+The first half of the network is the **encoder**. Its output, 8 numbers per hexagon, is the **embedding**.
+
+@@code
 def encode(net, inputs, layers=2):
     """Run the inputs through the first layers of the network and stop at the narrow 8-number layer."""
     a = inputs
@@ -31,56 +53,57 @@ def encode(net, inputs, layers=2):
 
 
 E = StandardScaler().fit_transform(encode(net, own))    # the embedding: 8 numbers per hexagon
-print("Embedding of the Otaniemi hexagon:", np.round(E[q_otaniemi], 2))
+QUERY = h.five(hexes)["Otaniemi"]                       # or: h.hexagon_at(hexes, lon, lat)
+print("embedding of the Otaniemi hexagon:", np.round(E[QUERY], 2))
 
 @@md
-The numbers themselves mean nothing to us. What we hope is that **places that are alike end up close together**. If so, we can search: *which hexagons are most like Otaniemi?*
+A single number of the embedding has no meaning to us. What matters is distance: hexagons that are alike should lie close together.
+
+## 3 · Places like Otaniemi
+
+A similarity search: the 12 hexagons nearest to Otaniemi in the embedding.
 
 @@code
 def most_similar(M, query, k=12):
+    """The k rows of M nearest to the row `query`, and the distance of every row to it."""
     distance = np.linalg.norm(M - M[query], axis=1)
     order = np.argsort(distance)
     return order[order != query][:k], distance
 
 
+top, distance = most_similar(E, QUERY)
+h.map_similar(hexes, distance, top, QUERY);
+
+@@md
+The table lists the 12. The column `landmarks` names a university or a shopping centre first wherever a hexagon has one, so read it with care.
+
+@@code
 def stands_out(i, k=4):
     """The k kinds of POI of which hexagon i has unusually many, compared with all hexagons."""
-    return ", ".join(np.array(FEATURES)[np.argsort(-own[i])[:k]])
+    return ", ".join(np.array(h.FEATURES)[np.argsort(-own[i])[:k]])
 
 
-QUERY = q_otaniemi          # or: h.hexagon_at(hexes, lon, lat) for any place you like
-top, distance = most_similar(E, QUERY)
-closer_than = 100 * (1 - pd.Series(distance).rank(pct=True).to_numpy())     # 99 = among the 1 % most similar
-
-fig, ax = plt.subplots(figsize=(9.5, 6.2))
-h.map_values(hexes, closer_than, ax=ax, cmap="Blues", vmin=50, vmax=100,
-             label="more similar to the query than ... % of all hexagons", outline=top,
-             title=f"The {len(top)} hexagons most like Otaniemi (outlined)")
-hexes.iloc[[QUERY]].plot(ax=ax, facecolor="#eb6834", edgecolor=h.INK, linewidth=1.6, zorder=5)
-h.save(fig, "2_similarity_otaniemi.png", SAVE)
-plt.show()
-
-print("The query hexagon stands out for:", stands_out(QUERY))
+xy = hexes[["x", "y"]].to_numpy()                    # the centre of every hexagon, in metres
 table = hexes.iloc[top][["landmarks", "poi_total", "landuse"]].copy()
 table.insert(0, "km from query", np.round(np.linalg.norm(xy[top] - xy[QUERY], axis=1) / 1000, 1))
 table["stands out for"] = [stands_out(i) for i in top]
+print("Otaniemi stands out for:", stands_out(QUERY))
+print("hexagons of the list that touch Otaniemi:", len(set(top) & set(W[QUERY].indices)))
 table.reset_index(drop=True)
 
-@@md
-> **What did we just see?** A model that was never given land use or place names can still answer "find me places like this one". The answers lie kilometres away from Otaniemi and none of them touches it. Read the column *stands out for* to see what they share with the query, and compare the land-use labels: similar surroundings and similar land use are not the same thing.
->
-> Read the *landmarks* column with care. It lists a university or a shopping centre first whenever a hexagon contains one, so it can make any busy hexagon look like a campus.
->
-> Searching in an embedding is the *geospatial similarity search* of the lecture. Large Earth observation models such as AlphaEarth Foundations apply the same idea at a much larger scale: 64 numbers for every 10 m pixel of the land surface and every year, learned from satellite and other Earth observation records.
+@@code hidden
+assert len(top) == 12 and not set(top) & set(W[QUERY].indices)
 
 @@md
-## Going deeper
+**Result.** The 12 hexagons lie 2 to 12 km from Otaniemi and none touches it. Eleven stand out for `culture`, as Otaniemi does. Their labels differ: similar surroundings are not the same land use.
 
-**Is the embedding different from the raw profile, and is it better?** Three checks. The second compares the embedding with a plain summary of the same size: the 8 principal components of the 16 counts (principal component analysis, PCA). The third is *slow* (about half a minute).
+## 4 · Embedding or raw counts?
+
+Two checks: the same search in the raw counts, and how often the six most similar hexagons of a hexagon carry its label. For comparison, 8 principal components (PCA), a plain summary of the same size.
 
 @@code
 top_raw, _ = most_similar(own, QUERY)
-print(f"1. The same search in the raw profile shares {len(set(top) & set(top_raw))} of {len(top)} hexagons with the search in the embedding.")
+print(f"the search in the raw counts shares {len(set(top) & set(top_raw))} of {len(top)} hexagons with the search in the embedding")
 
 
 def like_with_like(M, k=6):
@@ -89,85 +112,39 @@ def like_with_like(M, k=6):
     return (y[idx] == y[:, None]).mean()
 
 
-pca8 = StandardScaler().fit_transform(PCA(n_components=8, random_state=SEED).fit_transform(own))   # a plain 8-number summary
-print("2. Share of the six most similar hexagons with the same land-use label:")
-for name, M in (("raw POI profile (16 numbers)", own), ("PCA of the profile (8 numbers)", pca8), ("our embedding (8 numbers)", E)):
-    print(f"     {name:32s} {like_with_like(M):.0%}")
-print(f"     {'the adjacent hexagons on the map':32s} {same_as_neighbours:.0%}")
-
-folds_r2 = []
-for tr, te in GroupKFold(5).split(own, groups=KMeans(n_clusters=10, n_init=10, random_state=SEED).fit_predict(xy)):
-    m = MLPRegressor(hidden_layer_sizes=(32, 8, 32), alpha=1e-3, max_iter=3000, random_state=SEED).fit(own[tr], around[tr])
-    folds_r2.append(m.score(own[te], around[te]))
-print(f"3. Pretext task: R² = {net.score(own, around):.2f} on the training hexagons, {np.mean(folds_r2):.2f} on held-out areas.")
+pca8 = StandardScaler().fit_transform(PCA(n_components=8, random_state=SEED).fit_transform(own))
+options = {"raw POI profile (16 numbers)": own, "PCA of the profile (8 numbers)": pca8, "our embedding (8 numbers)": E}
+for name, M in options.items():
+    print(f"{name:32s} {like_with_like(M):.0%}")
+same_as_neighbours = np.mean([np.mean(y[W[i].indices] == y[i]) for i in range(len(y)) if W[i].nnz])
+print(f"{'the hexagons that touch it':32s} {same_as_neighbours:.0%}")
 
 @@md
-> **What did we just see?** The network changed the answer: the two searches return mostly different hexagons. It did not make the answer better by the one yardstick we have, since hexagons that are close in the embedding share a land-use label slightly *less* often than hexagons that are close in the raw profile. And the network explains its own training hexagons much better than hexagons in areas it has not seen, which is a first taste of the page on challenges.
->
-> So this demo shows that an embedding supports search. It does not show that this embedding is better than the counts it was built from.
+**Result.** The two searches share 1 of 12 hexagons: the network changed the answer. By this measure it did not improve it: 68% in the embedding, 72% in the raw counts.
 
-**The embedding in two dimensions.** It never saw the labels. If we squash the 8 numbers to 2 for plotting and colour by land use afterwards, do the classes separate?
+## 5 · 30 labels
 
-@@code
-E2 = PCA(n_components=2, random_state=SEED).fit_transform(E)
-
-fig, ax = plt.subplots(figsize=(7.5, 5.5))
-for c in CLASSES:
-    m = y == c
-    ax.scatter(E2[m, 0], E2[m, 1], s=14, color=COLORS[c], alpha=0.75, edgecolor="white", linewidth=0.3, label=f"{c} ({m.sum()})")
-ax.scatter(*E2[q_otaniemi], s=110, facecolor="none", edgecolor=h.INK, linewidth=1.8)
-ax.annotate("Otaniemi", E2[q_otaniemi], xytext=(8, 8), textcoords="offset points")
-ax.set_title("The embedding in two dimensions, coloured by land use afterwards")
-ax.set_xlabel("embedding, principal component 1")
-ax.set_ylabel("embedding, principal component 2")
-ax.legend(markerscale=1.8)
-h.save(fig, "2_embedding_2d.png", SAVE)
-plt.show()
-
-@@md
-> **What did we just see?** Partly. Green hexagons crowd into one corner, work areas spread out towards the top and right, and residential hexagons sit in between and overlap both. The embedding has organised places by how much and what kind of activity they hold, which is related to land use without being the same thing.
-
-**Pre-train, then fine-tune.** The reason to learn an embedding first is the *downstream task*: with a good representation, a handful of labels should go further. We return to 30 labels drawn at random and train the same classifier on three descriptions of a hexagon.
+The **downstream task** is the reason to learn an embedding first: a few labels should then go further. The classifier of the page before, fitted on 30 hexagons drawn at random and tested on the other 1,429, in twelve draws.
 
 @@code
 def few_label_accuracy(M, seeds=range(12)):
     scores = []
     for seed in seeds:
-        lab = draw_labelled(seed, per_class=False)
+        lab = h.draw_labelled(y, 30, seed)                   # 30 hexagons at random
         rest = np.setdiff1d(np.arange(len(y)), lab)
-        scores.append((new_model().fit(M[lab], y[lab]).predict(M[rest]) == y[rest]).mean())
+        scores.append((h.new_model().fit(M[lab], y[lab]).predict(M[rest]) == y[rest]).mean())
     return np.mean(scores), np.std(scores)
 
 
-options = {"raw POI profile (16 numbers)": own, "PCA of the profile (8 numbers)": pca8, "our embedding (8 numbers)": E}
 results = {name: few_label_accuracy(M) for name, M in options.items()}
-
-fig, ax = plt.subplots(figsize=(8, 2.8))
-h.bars(ax, list(results), [m for m, s in results.values()], title="Accuracy with 30 random labels (mean of 12 draws)")
-plt.tight_layout()
-h.save(fig, "2_downstream_30_labels.png", SAVE)
-plt.show()
 for name, (m, s) in results.items():
     print(f"{name:32s} {m:.1%}  (± {s:.1%} between draws)")
+h.plot_few_labels(results);
+
+@@code hidden
+assert [f"{results[k][0]:.0%}" for k in ("our embedding (8 numbers)", "raw POI profile (16 numbers)")] == ["72%", "73%"]
 
 @@md
-> **What did we just see?** Read the numbers before believing the story. On a table this small and this simple, the learned embedding does not beat the raw counts, and the differences are of the same size as the spread between draws. The idea pays off when the raw input is huge and unstructured (a satellite image, a street-view photo, a sentence) and labelled examples are rare, which is the setting foundation models are built for. Even there the gain is not automatic: the AlphaEarth paper notes that learned features "don't always outperform designed featurization methods in scarce data regimes" (Brown et al., 2025).
+**Result.** 72% with the embedding against 73% with the raw counts, a difference smaller than the spread between draws. On a table this small the embedding supports search and does not improve prediction. Embeddings pay off where the input is large and unstructured, such as satellite images, and labels are rare. AlphaEarth Foundations works in that setting: 64 numbers for every 10 m pixel.
 
-@@md
-## Your turn
-
-- Change `QUERY` to another place: `h.hexagon_at(hexes, 24.941, 60.170)` is the city centre, `(25.082, 60.210)` Itäkeskus, `(24.550, 60.300)` Nuuksio. Do the answers make sense to you as someone who knows the region? Where do they not?
-- Compare `most_similar(E, QUERY)` with `most_similar(own, QUERY)` for a place you know well. Which list would you trust more, and why?
-- Change the width of the narrow layer from 8 to 2 or 32 in `hidden_layer_sizes`. What happens to the three checks under *Going deeper*?
-- Change the pretext task: hide half of the 16 counts and ask the network to reconstruct them (a *masked* task, as in the S2Vec figure of the lecture).
-
-**Going further with real tools**
-
-- The Python library [`srai`](https://kraina-ai.github.io/srai/) has a ready `Hex2VecEmbedder` that learns hexagon embeddings from OpenStreetMap tags. It needs PyTorch (`pip install "srai[torch]"`) and its authors warn that it is under heavy development, so expect to read the documentation.
-- The [AlphaEarth Satellite Embedding dataset](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL) in Google Earth Engine gives 64 numbers per 10 m pixel for every year from 2017 to 2024 (licence CC BY 4.0). Averaging them per hexagon would give you a second, image-based embedding of the same hexagons to compare with this one.
-
-**Ask an AI assistant**
-
-> I have a GeoDataFrame `hexes` of H3 hexagons and a NumPy array `E` with one embedding row per hexagon. Write a function that takes a longitude and latitude, finds the hexagon containing that point, and returns the 10 most similar hexagons by cosine similarity with their `landmarks` column. Mind the coordinate reference system: `hexes` is in EPSG:3067.
-
-Then check its answer: did it reproject the point before testing which hexagon contains it?
+**Next:** [reinforcement learning](reinforcement)

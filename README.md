@@ -1,6 +1,6 @@
 # GeoAI on Helsinki hexagons
 
-A website for the two lectures *Machine Learning & GeoAI approaches to spatial data analysis* of the course GIS-E1130 Introduction to Spatial Data Analysis (Aalto University). Each page shows one concept of the lectures on the same dataset: the Helsinki region divided into 1,459 H3 hexagons, each with 16 counts of OpenStreetMap points of interest and one land-use label.
+A worked example, as a website of short notebooks, for the two lectures *Machine Learning & GeoAI approaches to spatial data analysis* of the course GIS-E1130 Introduction to Spatial Data Analysis (Aalto University). Each page shows one concept of the lectures on the same dataset: the Helsinki region divided into 1,459 H3 hexagons, each with 16 counts of OpenStreetMap points of interest and one land-use label.
 
 | Page | Concept | Slider or widget |
 |---|---|---|
@@ -17,25 +17,25 @@ A website for the two lectures *Machine Learning & GeoAI approaches to spatial d
 
 ## How the site is made
 
-All pages are one notebook, cut into pages.
+Every page is a short notebook that runs by itself: a line of text, a code cell that is shown, its output, the result in one line. A page loads the data in its first cell (`hexes, X, y, W = h.load()`) and uses nothing from another page.
 
 ```
 src/NN_slug.txt      the text and the code of one page (edit these)
-build_site.py        joins the sources, runs the notebook once, writes docs/<slug>.ipynb and docs/_static/
-helpers.py           data loading, maps and plots used by the notebook
+build_site.py        makes one notebook per page, runs each in its own kernel, writes docs/<slug>.ipynb and docs/_static/
+helpers.py           loading, maps and plots that the notebooks call
 data/                the hexagon tables (GeoPackage), resolution 8 and 9
 build_dataset.py     builds the tables again from OpenStreetMap (not needed to build the site)
 docs/                the Sphinx project that Read the Docs builds: conf.py, index.md, the page notebooks, _static/
-notebooks/           the whole notebook in one file, with outputs
 ```
 
-The page notebooks in `docs/` carry their outputs, so Read the Docs installs only Sphinx, MyST-NB and the Furo theme (`docs/requirements.txt`) and runs no analysis code.
+The page notebooks in `docs/` carry their outputs, so Read the Docs installs only Sphinx, MyST-NB and the Furo theme (`docs/requirements.txt`) and runs no analysis code. For download, `docs/_static/notebooks/` holds every notebook without outputs, and `docs/_static/geoai_hexagons.zip` holds all of them with `helpers.py`, `requirements.txt` and the data.
 
 ### After an edit
 
 ```
 pip install -r requirements.txt            # once: the packages of the analysis
-python build_site.py                       # after a change of code: runs the notebook again (about four minutes)
+python build_site.py                       # runs every page again, four at a time
+python build_site.py data supervised       # runs only these pages
 python build_site.py text                  # after a change of text only: keeps the stored outputs
 pip install -r docs/requirements.txt       # once: Sphinx, MyST-NB, Furo
 sphinx-build -b html docs docs/_build/html # the site on this computer: open docs/_build/html/index.html through a local web server
@@ -43,7 +43,9 @@ sphinx-build -b html docs docs/_build/html # the site on this computer: open doc
 
 The sliders and the interactive map need a web server, because a browser does not load them from a `file://` address: `python -m http.server --directory docs/_build/html` and then <http://localhost:8000>.
 
-Source format: `@@page slug` starts a page, `@@md` a text cell, `@@code` a code cell that is folded on the site, `@@code show` one that is open, `@@code hidden` one that is left out of the site, and `@@code slider` one whose picture is left out because a slider shows the same pictures.
+Source format: `@@page slug` starts a page, `@@md` a text cell, `@@code` a code cell that is shown, `@@code fold` one that is folded, and `@@code hidden` one that is left out of the site and of the notebook for download. Hidden cells hold only the teacher's plumbing: the frames of a slider, the interactive map, numbers for the slides.
+
+Rules of a page: at most six steps; one to three sentences before a code cell; a shown code cell of at most 12 lines (a learning step that is written out may be longer); drawing code lives in `helpers.py`; a page stays under about 450 words of text.
 
 ## Publishing on Read the Docs
 

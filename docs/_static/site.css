@@ -28,3 +28,8 @@
 
 iframe.webmap { width: 100%; height: 520px; border: 1px solid var(--stone); border-radius: 10px; }
 img.wide { display: block; width: 100%; max-width: 860px; margin: 0.6rem auto; }
+
+/* the link to the notebook under the title of a page; code cells that are shown */
+p.nb-download { font-size: 0.9rem; color: var(--grey); margin: -0.4rem 0 1rem 0; }
+p.nb-download a { font-weight: 700; }
+div.cell div.cell_input { border-left: 3px solid var(--accent); }

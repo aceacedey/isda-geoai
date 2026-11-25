@@ -11,3 +11,4 @@ Thumbs.db
 /figures/
 .claude/
 build.log
+build_*.log

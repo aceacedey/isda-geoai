@@ -1,71 +1,68 @@
 @@page own_data
 
 @@md
-# Doing this with your own data
+# Your own data
 
-## Where to find data like this
+```{admonition} Question
+:class: tip
+How do the notebooks run on another city, or on another table?
+```
 
-| Source | What you get | Notes |
-|---|---|---|
-| [Overpass Turbo](https://overpass-turbo.eu/) | OpenStreetMap features for a small area, straight from the browser, exportable as GeoJSON | Good for one neighbourhood or one tag. The public server is meant for small, hand-run queries |
-| [Geofabrik extract for Finland](https://download.geofabrik.de/europe/finland.html) | All of OpenStreetMap for Finland as one file (`.osm.pbf`, shapefile or GeoPackage), updated regularly | The right choice for a whole city or region. Licence ODbL 1.0 |
-| [`osmnx`](https://osmnx.readthedocs.io/) | OpenStreetMap from Python: `ox.features_from_place("Otaniemi, Espoo", {"amenity": True})` | What `build_dataset.py` uses |
-| [HSY open data](https://www.hsy.fi/en/environmental-information/open-data/) | Land cover, buildings, population and environmental data for the capital region | Licence CC BY 4.0 |
-| Helsinki Region Infoshare (hri.fi) | Open data from the cities of the region: services, traffic, statistics by district | |
-| CSC Paituli (paituli.csc.fi) | Finnish spatial datasets for universities, including statistical grids | Some datasets are for research and teaching use only; check the licence of each |
-| [AlphaEarth Satellite Embedding](https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_SATELLITE_EMBEDDING_V1_ANNUAL) | A ready-made 64-number embedding for every 10 m pixel of the land surface, yearly from 2017 to 2024 | Needs a Google Earth Engine account. Licence CC BY 4.0 |
-| [H3](https://h3geo.org/) | The hexagon grid itself. Resolution 8 is about 0.74 km² per cell on average over the globe and about 0.57 km² at the latitude of Helsinki; resolution 9 is about 0.105 km² on average and 0.08 km² here | Python package `h3` |
+**In this notebook:** 1 · what a notebook loads  2 · the columns  3 · another city  4 · your own table  5 · before you believe a result
 
-OpenStreetMap data must be credited ("© OpenStreetMap contributors") and you must say that it is available under the Open Database License.
+## 1 · What a notebook loads
 
-## A recipe for your own hexagon table
+Every notebook starts with the same line. `h.load()` reads one file, `data/helsinki_hex_r8.gpkg`. Replace that file and every notebook runs on the new data.
 
-1. **Pick a question and a target.** Something you can map: noise complaints, building age, tree cover, rents, bike counts.
-2. **Pick the unit.** A hexagon size that matches the phenomenon. Remember the page on spatially explicit models: the answer can change with the unit.
-3. **Decide how the labelled places are chosen**, and say so. The page on semi-supervised learning showed how much depends on it.
-4. **Build features per unit** from data that is not the target in disguise.
-5. **Look at the map** of the target and of two or three features before any modelling.
-6. **Decide how you will test** before you train (the page on challenges), and report more than one number.
-7. **Start with the simplest model** and add geography on purpose (the page on spatially explicit models), so you can tell what it bought you.
+@@code
+import helpers as h
 
-## Working with an AI assistant
-
-An assistant is good at producing a first version of code like `build_dataset.py`. It is also confidently wrong in ways that are specific to spatial data. A workable routine:
-
-**1. Give it the facts it cannot guess.** Library versions, the coordinate reference system, column names, the area, the size of the data.
-
-> I use Python with geopandas 1.x, osmnx 2.x and h3 version 4. Write a script that downloads all OpenStreetMap features tagged `amenity` or `shop` for Tampere, Finland, lays an H3 resolution 8 grid over the city, and counts features per hexagon and per tag value. Return a GeoDataFrame in EPSG:3067 with one row per hexagon. Keep it under 60 lines and comment each step.
-
-**2. Ask for one step at a time, each with a check.**
-
-> Before going on, add a line that prints the number of hexagons and plots them over the city boundary so I can see that the grid covers the city.
-
-**3. Check the things assistants most often get wrong with spatial data.**
-
-| Check | Why |
-|---|---|
-| Does the code run with *your* library versions? | Function names change. In `h3`, version 3 has `geo_to_h3` and `k_ring`, version 4 has `latlng_to_cell` and `grid_disk`. Assistants mix them freely. The build script for this notebook had to handle both |
-| Is every distance and area computed in a metric CRS? | Buffers and areas in degrees are meaningless. Finland: EPSG:3067 |
-| Longitude and latitude in the right order? | Some functions want (lat, lng), others (x, y) = (lng, lat) |
-| Does the map look right? | A grid in the sea or a city in the wrong country is obvious on a map and invisible in a table |
-| How were the labelled examples chosen, and how was the model tested? | Assistants reach for a balanced sample and for `train_test_split` by default. You now know what each of them does to a result |
-| Is a feature the target in disguise? | In this notebook parks were kept out of the POI features, because parks help define the `green` label |
-| Licence and attribution? | The assistant will not add them for you |
-
-**4. Ask it to explain, and then verify the explanation yourself.** An assistant that can produce the code can also produce a plausible wrong reason for why it works. A plausible explanation is not evidence, so test the claim: change the sample, the split or the seed, and see whether the result survives.
-
-Check the course rules on AI use before using an assistant for graded work.
+hexes, X, y, W = h.load()        # the table, the features, the labels, the neighbours
+print(f"{len(hexes):,} rows   X {X.shape}   W {W.shape}   coordinates in {hexes.crs.to_string()}")
 
 @@md
-## What to remember
+## 2 · The columns a table needs
 
-1. **Learning:** a program learns if its performance at a task improves with experience. On our hexagons the accuracy rose with the number of hexagons whose land use the program was given.
-2. **Unsupervised:** clustering finds groups of similar rows without any answer. Someone has to name the groups afterwards.
-3. **Supervised:** a rule with parameters is fitted to rows with known answers and scored on rows it has not seen. Its flexibility is a setting chosen on a validation pile.
-4. **Spatial dependence:** places resemble their neighbours. The methods of part 2 borrow from that resemblance, and a test has to guard against it.
-5. **Semi-supervised:** unlabelled data helped where the labelled sample misrepresented the map, and little where it did not. How the labelled places are chosen matters as much as the method.
-6. **Self-supervised:** a model can learn a description of places, an embedding, from a task that needs no labels. Ours supported search and did not improve prediction.
-7. **Reinforcement:** an agent learns from the rewards that follow its own actions. It needs no table of examples.
-8. **Spatially explicit:** a model is spatial when relocating the data changes its results. What the spatial arrangement is worth depends on how much a unit says about itself.
-9. **Testing:** a random split overstates a model in proportion to its use of location. Report more than one number.
-10. **Spatial heterogeneity:** regions differ, in what is built and in how it is mapped, so a test in one region does not license use in another.
+One row per unit. The cell lists what the notebooks read, and checks a table for it.
+
+@@code
+needed = {"features (counts)": h.FEATURES, "label": ["landuse"], "centre, in metres": ["x", "y"], "shape": ["geometry"],
+          "for single notebooks": ["poi_total", "share_residential", "share_work", "municipality"]}
+for what, columns in needed.items():
+    missing = [c for c in columns if c not in hexes.columns]
+    print(f"{what:21s} {', '.join(columns)}   {'MISSING ' + str(missing) if missing else 'ok'}")
+print("classes of the label:", ", ".join(sorted(set(y))))
+
+@@md
+## 3 · Another city
+
+1. Open `build_dataset.py` of the repository and set `PLACES` to your municipalities.
+2. Outside Finland, replace `EPSG:3067` in `build_dataset.py` and in `helpers.py` by a coordinate system in metres for your country.
+3. Run `python build_dataset.py 8`. It needs the packages `osmnx` and `h3`, downloads OpenStreetMap for a few minutes, and writes the file of step 1 again. Keep a copy of the Helsinki file.
+
+@@md
+4. In `helpers.py`, set `FIVE_PLACES` and `PLACES` to points inside your city.
+5. Run the notebooks from the top. The **Result** lines describe Helsinki, so read your own outputs. In the challenges notebook, change the three city names.
+
+@@md
+## 4 · Your own table
+
+1. Save one row per unit, with the columns of step 2, as a GeoPackage under the file name of step 1.
+2. Other features: change `FEATURES` in `helpers.py`. Counts suit best, because `h.load()` takes `log(1 + count)`.
+3. Other classes: change `CLASSES` and `COLORS`.
+4. Units that are not a regular grid, such as postal areas: `h.neighbour_matrix` finds the neighbours by the distance between centres. Build `W` from shared borders instead (week 3).
+
+@@md
+Open data for Finland: OpenStreetMap through [`osmnx`](https://osmnx.readthedocs.io/) or a [Geofabrik extract](https://download.geofabrik.de/europe/finland.html), [HSY](https://www.hsy.fi/en/environmental-information/open-data/), Helsinki Region Infoshare (hri.fi), Paituli (paituli.csc.fi).
+
+@@md
+## 5 · Before you believe a result
+
+- Keep the target out of the features. Parks are not among our POIs, because parks help define `green`.
+- Compute distances and areas in metres.
+- Map the label and two or three features before any model.
+- Say how the labelled places were chosen (semi-supervised notebook).
+- Test the way the model will be used (challenges notebook).
+- Credit the source: © OpenStreetMap contributors (ODbL).
+
+**Back to:** [the data](data).
