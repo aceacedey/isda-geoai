@@ -1,7 +1,7 @@
 @@page self_supervised
 
 @@md
-# Self-supervised learning: no labels
+# Self-supervised learning: training without labels
 
 @@md site
 <div class="slides n2"><a href="_static/slides/pretext_stages.png"><img src="_static/slides/pretext_stages.png" alt="Lecture slide: Two stages: pre-train, then reuse"></a><a href="_static/slides/embedding_uses.png"><img src="_static/slides/embedding_uses.png" alt="Lecture slide: What embeddings are used for: four examples"></a></div>

@@ -1,6 +1,6 @@
 # Getting started
 
-<div class="slides n2"><a href="_static/slides/today.png"><img src="_static/slides/today.png" alt="Lecture slide: Today: three learning paradigms, spatially explicit models"></a><a href="_static/slides/website.png"><img src="_static/slides/website.png" alt="Lecture slide: The website: ten short notebooks"></a></div>
+<div class="slides n1"><a href="_static/slides/today.png"><img src="_static/slides/today.png" alt="Lecture slide: Today: three learning paradigms, spatially explicit models"></a></div>
 <p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
 
 ```{admonition} Question
