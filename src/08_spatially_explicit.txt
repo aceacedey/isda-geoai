@@ -4,7 +4,7 @@
 # Spatially explicit models: geography in the model
 
 @@md site
-<div class="slides n2"><a href="_static/slides/spatially_explicit.png"><img src="_static/slides/spatially_explicit.png" alt="Lecture slide: Spatially explicit: location goes into the model"></a><a href="_static/slides/four_tests.png"><img src="_static/slides/four_tests.png" alt="Lecture slide: When is a model spatially explicit?"></a></div>
+<div class="slides n2"><a href="_static/slides/spatially_explicit.png"><img src="_static/slides/spatially_explicit.png" alt="Lecture slide: Giving a model spatial information"></a><a href="_static/slides/four_tests.png"><img src="_static/slides/four_tests.png" alt="Lecture slide: When is a model spatially explicit?"></a></div>
 <p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
 
 @@md

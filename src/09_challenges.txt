@@ -4,7 +4,7 @@
 # Challenges: can we believe the score?
 
 @@md site
-<div class="slides n1"><a href="_static/slides/two_splits.png"><img src="_static/slides/two_splits.png" alt="Lecture slide: Two ways of testing, two different scores"></a></div>
+<div class="slides n1"><a href="_static/slides/two_splits.png"><img src="_static/slides/two_splits.png" alt="Lecture slide: How to test a spatial model: random split or spatial split?"></a></div>
 <p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
 
 @@md

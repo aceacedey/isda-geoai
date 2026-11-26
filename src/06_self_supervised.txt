@@ -4,7 +4,7 @@
 # Self-supervised learning: no labels
 
 @@md site
-<div class="slides n2"><a href="_static/slides/pretext_stages.png"><img src="_static/slides/pretext_stages.png" alt="Lecture slide: No labels: two stages, two kinds of labels"></a><a href="_static/slides/embedding_uses.png"><img src="_static/slides/embedding_uses.png" alt="Lecture slide: What embeddings are used for: four examples"></a></div>
+<div class="slides n2"><a href="_static/slides/pretext_stages.png"><img src="_static/slides/pretext_stages.png" alt="Lecture slide: Two stages: pre-train, then reuse"></a><a href="_static/slides/embedding_uses.png"><img src="_static/slides/embedding_uses.png" alt="Lecture slide: What embeddings are used for: four examples"></a></div>
 <p class="slides-caption">From the lecture <a href="https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html">Introduction to GeoAI, part 2</a>. Click a slide to enlarge it.</p>
 
 @@md

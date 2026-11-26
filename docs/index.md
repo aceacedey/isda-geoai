@@ -6,7 +6,7 @@ A worked example for the two lectures *Machine Learning & GeoAI approaches to sp
 
 **Lecture slides:** [Introduction to GeoAI, part 1](https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI.html) · [part 2](https://introsda.readthedocs.io/en/latest/lessons/L10/intro-to-GeoAI-2.html), on the course site.
 
-**One dataset, every method of the two lectures.** The Helsinki region as 1,459 hexagons. Each hexagon is one row of a table and one place on a map: 16 counts of points of interest and one land-use label, from OpenStreetMap.
+**Two worked examples: Helsinki land use and a simulated courier.** The Helsinki region as 1,459 hexagons. Each hexagon is one row of a table and one place on a map: 16 counts of points of interest and one land-use label, from OpenStreetMap.
 
 ## How a page works
 
@@ -17,7 +17,7 @@ Every page is a short notebook. It asks one question and answers it step by step
 3. its output,
 4. the result in one line.
 
-Each notebook runs by itself. [Getting started](setup) says how to install Python and the packages and how to run the notebooks on your laptop. Each page also shows the slides of the lecture that belong to it.
+First time, download the zip from [Getting started](setup): it holds all notebooks, the helpers and the data, and a notebook runs inside that folder. [Getting started](setup) also says how to install Python and the packages and how to run the notebooks on your laptop. Each page also shows the slides of the lecture that belong to it.
 
 ## The notebooks
 

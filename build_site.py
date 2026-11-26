@@ -37,8 +37,8 @@ SRC, DOCS, FIG = ROOT / "src", ROOT / "docs", ROOT / "figures"
 STATIC = DOCS / "_static"
 TAGS = {"code": [], "code show": [], "code fold": ["hide-input"], "code hidden": ["remove-cell"], "code slider": ["remove-cell"]}
 META = {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}, "language_info": {"name": "python"}}
-DOWNLOAD = ('\n\n<p class="nb-download">Run it yourself: <a href="_static/notebooks/{slug}.ipynb" download>this notebook</a> · '
-            '<a href="_static/geoai_hexagons.zip" download>all notebooks, the helpers and the data (zip)</a></p>')
+DOWNLOAD = ('\n\n<p class="nb-download">Run it yourself. First time: <a href="_static/geoai_hexagons.zip" download>the zip with all notebooks, '
+            'the helpers and the data</a>. Already have that folder: <a href="_static/notebooks/{slug}.ipynb" download>this notebook</a>.</p>')
 
 
 def read_sources():

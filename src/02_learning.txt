@@ -79,6 +79,6 @@ They differ in what the learner is given.
 - [Supervised](supervised) · an answer for every row.
 - [Semi-supervised](semi_supervised) · an answer for a few rows.
 - [Self-supervised](self_supervised) · no answers, a part of the data is hidden and predicted.
-- [Reinforcement](reinforcement) · no table, a reward for what it does.
+- [Reinforcement](reinforcement) · experience from actions and rewards.
 
 **Next:** [unsupervised learning](unsupervised)
